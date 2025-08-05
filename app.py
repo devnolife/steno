@@ -737,7 +737,8 @@ def pre_register_document_route():
                 return jsonify({
                     "success": True,
                     "message": "Document pre-registered successfully",
-                    "registration_id": result["registration_id"],
+                    "document_uuid": result["document_uuid"],  # Primary UUID
+                    "registration_id": result["registration_id"],  # For backward compatibility
                     "binding_token": result["binding_token"],
                     "document_info": result["document_info"],
                     "expires_at": result["expires_at"],

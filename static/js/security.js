@@ -391,10 +391,12 @@ const SecurityManager = {
       return `<h4>❌ Pre-Registration Failed</h4><p>${data.message}</p>`;
     }
 
-    // Save token for later use
-    this.saveBindingToken(data.registration_id, {
+    // Save token for later use (prefer UUID over legacy registration_id)
+    const documentId = data.document_uuid || data.registration_id;
+    this.saveBindingToken(documentId, {
       token: data.binding_token,
       documentName: data.document_info.filename,
+      documentUuid: data.document_uuid,
       expiresAt: data.expires_at * 1000,
       createdAt: Date.now()
     });
@@ -404,8 +406,14 @@ const SecurityManager = {
             <div class="security-details">
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <strong>Registration ID:</strong>
-                        <code>${data.registration_id}</code>
+                        <strong>Document ID:</strong>
+                        <div class="uuid-display">
+                            <code class="uuid-code">${data.document_uuid || data.registration_id}</code>
+                            <button onclick="navigator.clipboard.writeText('${data.document_uuid || data.registration_id}')" 
+                                    class="btn-copy" title="Copy Document ID">
+                                📋
+                            </button>
+                        </div>
                     </div>
                     <div class="detail-item">
                         <strong>Document:</strong>
@@ -438,6 +446,8 @@ const SecurityManager = {
                         <li>Paste the token and generate your QR code</li>
                     </ol>
                 </div>
+                
+                ${data.document_uuid ? '<div class="uuid-info"><small>✨ Using new UUID-based security system</small></div>' : ''}
             </div>
         `;
   },
@@ -473,16 +483,33 @@ const SecurityManager = {
         `;
 
     if (data.document_binding) {
+      const documentId = data.document_binding.document_id || data.document_binding.fingerprint_id;
       content += `
                     <div class="detail-item">
-                        <strong>Document Fingerprint:</strong>
-                        <code>${data.document_binding.fingerprint_id}</code>
+                        <strong>Document ID:</strong>
+                        <div class="uuid-display">
+                            <code class="uuid-code">${documentId}</code>
+                            <button onclick="navigator.clipboard.writeText('${documentId}')" 
+                                    class="btn-copy" title="Copy Document ID">
+                                📋
+                            </button>
+                        </div>
                     </div>
                     <div class="detail-item">
                         <strong>Expires:</strong>
                         <span>${new Date(data.document_binding.expires_at * 1000).toLocaleString()}</span>
                     </div>
             `;
+      
+      // Show UUID indicator if using new system
+      if (data.document_binding.document_id) {
+        content += `
+                    <div class="detail-item">
+                        <strong>Security Version:</strong>
+                        <span class="status-secure">UUID-based (v2.0)</span>
+                    </div>
+                `;
+      }
     }
 
     content += `

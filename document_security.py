@@ -17,6 +17,7 @@ import json
 import os
 import time
 import secrets
+import uuid
 from typing import Dict, Optional, Tuple, Union, Any
 from pathlib import Path
 import logging
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Security configuration
 HMAC_KEY_LENGTH = 32  # 256-bit key
 HMAC_DIGEST_LENGTH = 32  # 256-bit digest
-QR_BINDING_VERSION = "1.0"
+QR_BINDING_VERSION = "2.0"  # Updated to UUID-based format
 MAX_DOCUMENT_SIZE = 50 * 1024 * 1024  # 50MB max document size
 BINDING_EXPIRY_HOURS = 24  # QR codes expire after 24 hours
 
@@ -113,9 +114,12 @@ class DocumentBinder:
             # Document-specific metadata
             doc_metadata = self._extract_document_metadata(document_path, file_ext)
             
-            # Create fingerprint structure
+            # Create fingerprint structure with UUID-based document ID
+            document_id = str(uuid.uuid4())  # Generate unique UUID for document
+            
             fingerprint = {
                 "version": QR_BINDING_VERSION,
+                "document_id": document_id,  # Primary UUID identifier
                 "timestamp": int(time.time()),
                 "file_info": {
                     "name": filename,
@@ -128,13 +132,12 @@ class DocumentBinder:
                 "security_level": "standard"
             }
             
-            # Calculate fingerprint hash
+            # Calculate fingerprint hash for verification (kept for security)
             fingerprint_data = json.dumps(fingerprint, sort_keys=True).encode('utf-8')
             fingerprint_hash = hashlib.sha256(fingerprint_data).hexdigest()
-            fingerprint["fingerprint_id"] = fingerprint_hash[:16]  # Short ID for display
             fingerprint["fingerprint_hash"] = fingerprint_hash
             
-            logger.info(f"Generated fingerprint for {filename}: {fingerprint['fingerprint_id']}")
+            logger.info(f"Generated fingerprint for {filename}: {document_id}")
             return fingerprint
             
         except Exception as e:
@@ -237,8 +240,9 @@ class DocumentBinder:
             Base64-encoded binding token
         """
         try:
-            # Create binding payload
+            # Create binding payload with UUID
             binding_payload = {
+                "document_id": document_fingerprint["document_id"],  # Use UUID as primary ID
                 "fingerprint_hash": document_fingerprint["fingerprint_hash"],
                 "qr_data": qr_data,
                 "issued_at": int(time.time()),
@@ -268,7 +272,7 @@ class DocumentBinder:
             token_json = json.dumps(token_data)
             token_b64 = base64.b64encode(token_json.encode('utf-8')).decode('ascii')
             
-            logger.info(f"Generated binding token for fingerprint {document_fingerprint['fingerprint_id']}")
+            logger.info(f"Generated binding token for document {document_fingerprint['document_id']}")
             return token_b64
             
         except Exception as e:
@@ -320,7 +324,7 @@ class DocumentBinder:
             if current_time > payload.get("expires_at", 0):
                 return {"valid": False, "error": "Token expired"}
             
-            # Verify document fingerprint match
+            # Verify document fingerprint match (check both UUID and hash for compatibility)
             if payload.get("fingerprint_hash") != document_fingerprint.get("fingerprint_hash"):
                 return {
                     "valid": False, 
@@ -335,11 +339,12 @@ class DocumentBinder:
                 "qr_data": payload.get("qr_data"),
                 "issued_at": payload.get("issued_at"),
                 "expires_at": payload.get("expires_at"),
-                "fingerprint_id": document_fingerprint.get("fingerprint_id"),
+                "document_id": document_fingerprint.get("document_id"),  # Use UUID
+                "document_uuid": payload.get("document_id"),  # From token
                 "verification_time": current_time
             }
             
-            logger.info(f"Successfully verified binding token for fingerprint {document_fingerprint['fingerprint_id']}")
+            logger.info(f"Successfully verified binding token for document {document_fingerprint['document_id']}")
             return verification_result
             
         except json.JSONDecodeError as e:
@@ -377,6 +382,7 @@ class DocumentBinder:
     def parse_secure_qr_data(self, qr_data: str) -> Dict[str, Any]:
         """
         Parse QR data to extract original content and binding token
+        Handles both legacy (v1.0) and UUID-based (v2.0) formats
         
         Args:
             qr_data: QR data string (may be secure or legacy format)
@@ -389,12 +395,14 @@ class DocumentBinder:
             try:
                 data = json.loads(qr_data)
                 if isinstance(data, dict) and data.get("type") == "secure":
+                    version = data.get("version", "1.0")
                     return {
                         "is_secure": True,
                         "original_data": data.get("data"),
                         "binding_token": data.get("binding"),
-                        "version": data.get("version"),
-                        "created_at": data.get("created_at")
+                        "version": version,
+                        "created_at": data.get("created_at"),
+                        "is_uuid_based": version == "2.0"
                     }
             except json.JSONDecodeError:
                 pass
@@ -405,7 +413,8 @@ class DocumentBinder:
                 "original_data": qr_data,
                 "binding_token": None,
                 "version": None,
-                "created_at": None
+                "created_at": None,
+                "is_uuid_based": False
             }
             
         except Exception as e:
@@ -422,26 +431,41 @@ class BindingStorage:
         self.storage_dir.mkdir(exist_ok=True)
         logger.info(f"Initialized binding storage at {self.storage_dir}")
     
-    def save_binding_record(self, fingerprint_id: str, record: Dict[str, Any]) -> bool:
-        """Save a binding record"""
+    def save_binding_record(self, document_id: str, record: Dict[str, Any]) -> bool:
+        """Save a binding record using UUID as primary key"""
         try:
-            record_file = self.storage_dir / f"{fingerprint_id}.json"
+            record_file = self.storage_dir / f"{document_id}.json"
             with open(record_file, 'w') as f:
                 json.dump(record, f, indent=2)
-            logger.info(f"Saved binding record: {fingerprint_id}")
+            logger.info(f"Saved binding record: {document_id}")
             return True
         except Exception as e:
             logger.error(f"Error saving binding record: {e}")
             return False
     
-    def load_binding_record(self, fingerprint_id: str) -> Optional[Dict[str, Any]]:
-        """Load a binding record"""
+    def load_binding_record(self, document_id: str) -> Optional[Dict[str, Any]]:
+        """Load a binding record using UUID as primary key"""
         try:
-            record_file = self.storage_dir / f"{fingerprint_id}.json"
+            # First try UUID-based filename
+            record_file = self.storage_dir / f"{document_id}.json"
             if record_file.exists():
                 with open(record_file, 'r') as f:
                     record = json.load(f)
                 return record
+            
+            # Backward compatibility: try hash-based filename if UUID fails
+            # This helps with migration from old system
+            for existing_file in self.storage_dir.glob("*.json"):
+                try:
+                    with open(existing_file, 'r') as f:
+                        record = json.load(f)
+                    # Check if this record matches the requested document_id
+                    if (record.get("document_fingerprint", {}).get("document_id") == document_id or
+                        record.get("document_fingerprint", {}).get("fingerprint_id") == document_id):
+                        return record
+                except Exception:
+                    continue
+            
             return None
         except Exception as e:
             logger.error(f"Error loading binding record: {e}")
@@ -506,7 +530,7 @@ def quick_binding_verification(qr_data: str, document_path: str) -> Dict[str, An
             "binding_verified": verification["valid"],
             "is_legacy": False,
             "verification_details": verification,
-            "document_fingerprint": fingerprint["fingerprint_id"]
+            "document_id": fingerprint["document_id"]  # Use UUID instead of fingerprint_id
         }
         
     except Exception as e:
@@ -515,3 +539,42 @@ def quick_binding_verification(qr_data: str, document_path: str) -> Dict[str, An
             "is_legacy": False,
             "error": str(e)
         } 
+
+
+def is_valid_uuid(uuid_string: str) -> bool:
+    """Check if a string is a valid UUID format"""
+    try:
+        uuid.UUID(uuid_string)
+        return True
+    except ValueError:
+        return False
+
+
+def format_uuid(uuid_string: str, with_hyphens: bool = True) -> str:
+    """Format UUID string consistently"""
+    try:
+        uuid_obj = uuid.UUID(uuid_string)
+        if with_hyphens:
+            return str(uuid_obj)
+        else:
+            return uuid_obj.hex
+    except ValueError:
+        raise DocumentSecurityError(f"Invalid UUID format: {uuid_string}")
+
+
+def validate_uuid_input(uuid_string: str) -> Dict[str, Any]:
+    """Validate UUID input and return validation results"""
+    if not uuid_string:
+        return {"valid": False, "error": "UUID cannot be empty"}
+    
+    if not isinstance(uuid_string, str):
+        return {"valid": False, "error": "UUID must be a string"}
+    
+    if not is_valid_uuid(uuid_string):
+        return {"valid": False, "error": "Invalid UUID format"}
+    
+    return {
+        "valid": True,
+        "formatted_uuid": format_uuid(uuid_string),
+        "uuid_version": uuid.UUID(uuid_string).version
+    }

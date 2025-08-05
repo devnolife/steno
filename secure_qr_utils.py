@@ -113,13 +113,14 @@ class SecureQRGenerator:
                 "qr_generation_info": qr_result
             }
             
-            self.storage.save_binding_record(fingerprint["fingerprint_id"], binding_record)
+            self.storage.save_binding_record(fingerprint["document_id"], binding_record)
             
             result = {
                 "success": True,
                 "qr_path": output_path,
                 "document_binding": {
-                    "fingerprint_id": fingerprint["fingerprint_id"],
+                    "document_id": fingerprint["document_id"],  # Use UUID
+                    "document_uuid": fingerprint["document_id"],  # Explicit UUID field
                     "fingerprint_hash": fingerprint["fingerprint_hash"][:16] + "...",
                     "expires_at": binding_record["expires_at"],
                     "binding_status": "active"
@@ -129,11 +130,11 @@ class SecureQRGenerator:
                     "is_secure": True,
                     "original_data": data,
                     "secure_data_length": len(secure_qr_data),
-                    "version": "1.0"
+                    "version": "2.0"  # Updated to UUID-based version
                 }
             }
             
-            logger.info(f"Successfully generated bound QR with fingerprint {fingerprint['fingerprint_id']}")
+            logger.info(f"Successfully generated bound QR with document UUID {fingerprint['document_id']}")
             return result
             
         except Exception as e:
@@ -216,16 +217,17 @@ class SecureQRGenerator:
             }
             
             self.storage.save_binding_record(
-                f"prereg_{fingerprint['fingerprint_id']}", 
+                f"prereg_{fingerprint['document_id']}", 
                 preregistration_record
             )
             
             result = {
                 "success": True,
-                "registration_id": fingerprint["fingerprint_id"],
+                "registration_id": fingerprint["document_id"],  # Use UUID
+                "document_uuid": fingerprint["document_id"],  # Explicit UUID field
                 "binding_token": binding_token,
                 "document_info": {
-                    "fingerprint_id": fingerprint["fingerprint_id"],
+                    "document_id": fingerprint["document_id"],  # UUID
                     "filename": fingerprint["file_info"]["name"],
                     "size": fingerprint["file_info"]["size"],
                     "document_type": fingerprint["file_info"]["extension"]
@@ -237,7 +239,7 @@ class SecureQRGenerator:
                 }
             }
             
-            logger.info(f"Pre-registered document with ID: {fingerprint['fingerprint_id']}")
+            logger.info(f"Pre-registered document with UUID: {fingerprint['document_id']}")
             return result
             
         except Exception as e:
@@ -481,7 +483,7 @@ class SecureQRGenerator:
                 "original_data": data,
                 "uses_pregenerated_token": True,
                 "secure_data_length": len(secure_qr_data),
-                "version": "1.0"
+                "version": "2.0"  # Updated to UUID-based version
             }
             
             logger.info("Successfully generated QR with pre-generated token")
@@ -552,7 +554,7 @@ class SecureQRValidator:
                     "valid": True,
                     "is_legacy": False,
                     "binding_verified": True,
-                    "document_fingerprint": verification_result.get("document_fingerprint"),
+                    "document_id": verification_result.get("document_id"),  # Use UUID
                     "verification_details": details,
                     "security_level": "secure",
                     "message": "QR code is properly bound to this document",
@@ -623,9 +625,11 @@ class SecureQRValidator:
                             "version": qr_info["version"],
                             "created_at": qr_info["created_at"],
                             "original_data": qr_info["original_data"],
+                            "is_uuid_based": qr_info.get("is_uuid_based", False),
                             "binding_info": {
                                 "issued_at": payload.get("issued_at"),
                                 "expires_at": payload.get("expires_at"),
+                                "document_id": payload.get("document_id"),  # UUID if v2.0
                                 "expected_fingerprint": payload.get("fingerprint_hash", "")[:16] + "..."
                             }
                         }
@@ -640,6 +644,7 @@ class SecureQRValidator:
                             "version": qr_info["version"],
                             "created_at": qr_info["created_at"],
                             "original_data": qr_info["original_data"],
+                            "is_uuid_based": qr_info.get("is_uuid_based", False),
                             "binding_info": "encrypted"
                         }
                     }

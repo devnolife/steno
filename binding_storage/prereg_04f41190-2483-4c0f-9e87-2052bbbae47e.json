@@ -1,0 +1,34 @@
+{
+  "document_fingerprint": {
+    "version": "2.0",
+    "timestamp": 1753669081,
+    "file_info": {
+      "name": "prereg_dac74821a19a44fbbd32715b3142b8ba.docx",
+      "size": 19114,
+      "extension": ".docx",
+      "modified_time": 1753669081
+    },
+    "content_hash": "ad9b8ae5a642724fd96ed046dd140bd77bf17af22084ec732afb48c87c476106",
+    "document_metadata": {
+      "type": ".docx",
+      "paragraph_count": 69,
+      "image_count": 0,
+      "author": "andi agung",
+      "title": "",
+      "subject": "",
+      "created": "2025-07-25 14:06:00",
+      "modified": "2025-07-25 14:06:00",
+      "extraction_method": "docx"
+    },
+    "security_level": "standard",
+    "fingerprint_id": "4a62832082dadcaa",
+    "fingerprint_hash": "4a62832082dadcaa8774fca29262c43274be19adc7373695b4f493b94b8f86eb",
+    "document_id": "04f41190-2483-4c0f-9e87-2052bbbae47e"
+  },
+  "qr_data": "sdfsfsfsdfsdfsfsdfs",
+  "binding_token": "eyJwYXlsb2FkIjogImV5SmtiMk4xYldWdWRGOXBaQ0k2SUNJd05HWTBNVEU1TUMweU5EZ3pMVFJqTUdZdE9XVTROeTB5TURVeVltSmlZV1UwTjJVaUxDQWlaWGh3YVhKbGMxOWhkQ0k2SURFM05UTTNOVFUwT0RFc0lDSm1hVzVuWlhKd2NtbHVkRjlvWVhOb0lqb2dJalJoTmpJNE16SXdPREprWVdSallXRTROemMwWm1OaE1qa3lOakpqTkRNeU56UmlaVEU1WVdSak56TTNNelk1TldJMFpqUTVNMkk1TkdJNFpqZzJaV0lpTENBaWFYTnpkV1ZrWDJGMElqb2dNVGMxTXpZMk9UQTRNU3dnSW5GeVgyUmhkR0VpT2lBaWMyUm1jMlp6Wm5Oa1puTmtabk5tYzJSbWN5SXNJQ0oyWlhKemFXOXVJam9nSWpJdU1DSjkiLCAic2lnbmF0dXJlIjogIk9pYnd5Yi9oRnorV2lQd3drYVB1ZmhDdVdQZS9LamRnSmR3V0o3V1Z1Z3c9IiwgInZlcnNpb24iOiAiMi4wIn0=",
+  "status": "pre_registered",
+  "created_at": 1753669081,
+  "expires_at": 1753755481,
+  "qr_generated": false
+}

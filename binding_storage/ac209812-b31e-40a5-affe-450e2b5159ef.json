@@ -1,0 +1,188 @@
+{
+  "document_fingerprint": {
+    "version": "2.0",
+    "timestamp": 1753846907,
+    "file_info": {
+      "name": "testing-docs.docx",
+      "size": 1739212,
+      "extension": ".docx",
+      "modified_time": 1748695487
+    },
+    "content_hash": "bc3f3c91b2caf1af8472a1cb19278deb96abc51cb6e8365ea558b290dbb6a7e1",
+    "document_metadata": {
+      "type": ".docx",
+      "paragraph_count": 3,
+      "image_count": 17,
+      "author": "",
+      "title": "",
+      "subject": "",
+      "created": "2016-09-01 04:15:00",
+      "modified": "2022-03-23 05:26:00",
+      "extraction_method": "docx"
+    },
+    "security_level": "standard",
+    "fingerprint_id": "02b34ad832223281",
+    "fingerprint_hash": "02b34ad83222328138c3ba9a180b4858a3307c8e5dc06d53c53c87130a9d613d",
+    "document_id": "ac209812-b31e-40a5-affe-450e2b5159ef"
+  },
+  "qr_data": "Test QR Code Data - Project Testing 2025",
+  "secure_qr_data": "{\"version\":\"1.0\",\"type\":\"secure\",\"data\":\"Test QR Code Data - Project Testing 2025\",\"binding\":\"eyJwYXlsb2FkIjogImV5SmxlSEJwY21WelgyRjBJam9nTVRjMU16a3pNek13Tnl3Z0ltWnBibWRsY25CeWFXNTBYMmhoYzJnaU9pQWlNREppTXpSaFpEZ3pNakl5TXpJNE1UTTRZek5pWVRsaE1UZ3dZalE0TlRoaE16TXdOMk00WlRWa1l6QTJaRFV6WXpVell6ZzNNVE13WVRsa05qRXpaQ0lzSUNKcGMzTjFaV1JmWVhRaU9pQXhOelV6T0RRMk9UQTNMQ0FpY1hKZlpHRjBZU0k2SUNKVVpYTjBJRkZTSUVOdlpHVWdSR0YwWVNBdElGQnliMnBsWTNRZ1ZHVnpkR2x1WnlBeU1ESTFJaXdnSW5abGNuTnBiMjRpT2lBaU1TNHdJbjA9IiwgInNpZ25hdHVyZSI6ICIrZnU3Y1MrM2dpN1NMeEF1WHIvTERlZjUwU3Q4d2prSzBKT01zQmRKWlBZPSIsICJ2ZXJzaW9uIjogIjEuMCJ9\",\"created_at\":1753846907}",
+  "binding_token": "eyJwYXlsb2FkIjogImV5SmtiMk4xYldWdWRGOXBaQ0k2SUNKaFl6SXdPVGd4TWkxaU16RmxMVFF3WVRVdFlXWm1aUzAwTlRCbE1tSTFNVFU1WldZaUxDQWlaWGh3YVhKbGMxOWhkQ0k2SURFM05UTTVNek16TURjc0lDSm1hVzVuWlhKd2NtbHVkRjlvWVhOb0lqb2dJakF5WWpNMFlXUTRNekl5TWpNeU9ERXpPR016WW1FNVlURTRNR0kwT0RVNFlUTXpNRGRqT0dVMVpHTXdObVExTTJNMU0yTTROekV6TUdFNVpEWXhNMlFpTENBaWFYTnpkV1ZrWDJGMElqb2dNVGMxTXpnME5qa3dOeXdnSW5GeVgyUmhkR0VpT2lBaVZHVnpkQ0JSVWlCRGIyUmxJRVJoZEdFZ0xTQlFjbTlxWldOMElGUmxjM1JwYm1jZ01qQXlOU0lzSUNKMlpYSnphVzl1SWpvZ0lqSXVNQ0o5IiwgInNpZ25hdHVyZSI6ICIrZnU3Y1MrM2dpN1NMeEF1WHIvTERlZjUwU3Q4d2prSzBKT01zQmRKWlBZPSIsICJ2ZXJzaW9uIjogIjIuMCJ9",
+  "qr_file_path": "temp_test_results\\test_secure_bound_qr.png",
+  "created_at": 1753846907,
+  "expires_at": 1753933307,
+  "qr_generation_info": {
+    "success": true,
+    "qr_path": "temp_test_results\\test_secure_bound_qr.png",
+    "metadata": {
+      "version": 17,
+      "size_pixels": "85x930",
+      "module_count": "85x85",
+      "data_length": 624,
+      "error_correction": "L",
+      "capacity_used": 100,
+      "max_capacity": 0,
+      "estimated_embedding_capacity": 1440000,
+      "steganography_compatible": false,
+      "steganography_score": 30,
+      "quality_impact": {
+        "impact_level": "High",
+        "visual_change": "Perubahan cukup terlihat",
+        "psnr_estimate": "<25 dB",
+        "embedding_ratio": 0.1646875,
+        "affected_pixels": 79050
+      },
+      "recommendations": [
+        "Pertimbangkan untuk mengurangi panjang data",
+        "QR Code mungkin terlalu besar untuk steganografi optimal",
+        "Pertimbangkan error correction level yang lebih tinggi"
+      ]
+    },
+    "comprehensive_analysis": {
+      "data_summary": {
+        "length": 624,
+        "mode": "byte",
+        "recommended_version": 1,
+        "recommended_ec": null
+      },
+      "capacity_analysis": {
+        "data_length": 624,
+        "current_error_correction": "M",
+        "current_level": {
+          "version": null,
+          "capacity": 0,
+          "usage_percent": 100,
+          "remaining_capacity": 0,
+          "module_count": 0,
+          "error_correction_percent": 15,
+          "recommended": false,
+          "status": "Data terlalu panjang"
+        },
+        "all_levels": {
+          "L": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 7,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          },
+          "M": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 15,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          },
+          "Q": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 25,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          },
+          "H": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 30,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          }
+        },
+        "best_alternative": null,
+        "alternatives": {
+          "L": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 7,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          },
+          "Q": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 25,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          },
+          "H": {
+            "version": null,
+            "capacity": 0,
+            "usage_percent": 100,
+            "remaining_capacity": 0,
+            "module_count": 0,
+            "error_correction_percent": 30,
+            "recommended": false,
+            "status": "Data terlalu panjang"
+          }
+        },
+        "summary": {
+          "optimal_version": null,
+          "capacity_utilization": 100,
+          "steganography_friendly": false,
+          "upgrade_recommended": false
+        }
+      },
+      "steganography_analysis": {
+        "compatibility_score": 62.5,
+        "level": "Fair",
+        "length_score": 30,
+        "size_score": 95,
+        "estimated_pixels": 47524,
+        "concerns": [
+          "Data terlalu panjang untuk steganografi optimal"
+        ]
+      },
+      "overall_recommendation": [
+        "\u274c Data terlalu panjang, sangat disarankan untuk mempersingkat",
+        "\u26a0 Gunakan gambar target berukuran besar atau kurangi data"
+      ],
+      "quick_status": {
+        "steganography_ready": false,
+        "capacity_efficient": false,
+        "version_reasonable": true
+      }
+    },
+    "file_info": {
+      "size_bytes": 3966,
+      "size_kb": 3.87
+    }
+  }
+}

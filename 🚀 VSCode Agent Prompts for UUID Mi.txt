@@ -1,0 +1,45 @@
+🚀 VSCode Agent Prompts for UUID Migration
+Here are step-by-step prompts to migrate the watermarking system from hash-based to UUID-based document binding:
+Phase 1: Core Security Module Migration
+Prompt 1: Update Document Security
+Please modify the file `document_security.py` to implement UUID-based document fingerprinting. Replace the hash-based fingerprint ID generation with UUID4. Keep the existing content hash for verification purposes but use UUID as the primary document identifier. Update the `generate_document_fingerprint` method in the `DocumentBinder` class to generate a unique UUID for each document registration, and modify the fingerprint structure to include both `document_id` (UUID) and `fingerprint_hash` (for security verification).
+Prompt 2: Update Binding Storage
+In the file `document_security.py`, modify the `BindingStorage` class to use UUID as the primary key for storing and retrieving binding records. Update the `save_binding_record` and `load_binding_record` methods to work with UUID strings instead of hash-based IDs. Ensure backward compatibility by checking if the record file exists with either UUID or hash naming convention.
+Phase 2: Secure QR Utils Migration
+Prompt 3: Update Secure QR Generator
+Modify the file `secure_qr_utils.py` to implement UUID-based secure QR generation. Update the `SecureQRGenerator` class to use UUID from document fingerprints. Modify the `create_secure_qr_data` method to include the document UUID in the QR payload structure. Update the QR data version to "2.0" to indicate UUID-based format and ensure the binding token includes UUID reference.
+Prompt 4: Update QR Validation
+In `secure_qr_utils.py`, update the `SecureQRValidator` class to handle both legacy hash-based and new UUID-based QR codes. Modify the `parse_secure_qr_data` method to detect the QR version and handle UUID extraction appropriately. Update validation logic to work with UUID-based document identification while maintaining backward compatibility with hash-based QRs.
+Phase 3: API Endpoints Migration
+Prompt 5: Update Pre-registration Endpoint
+In the file `app.py`, modify the `/pre_register_document` route to work with UUID-based document registration. Update the response format to include the document UUID along with the existing binding token. Ensure the endpoint returns the UUID in a user-friendly format and updates any logging or response messages to reference UUID instead of hash-based IDs.
+Prompt 6: Update Secure QR Generation Endpoint
+In `app.py`, update the `/generate_secure_qr` route to handle UUID-based document binding. Modify the endpoint to work with UUID tokens from pre-registration and ensure proper UUID validation in the binding process. Update response formats to include UUID information in the security details and document binding sections.
+Prompt 7: Update Validation Endpoints
+Modify the `/validate_qr_binding` and `/qr_security_info` routes in `app.py` to handle UUID-based QR validation. Update the validation logic to extract and verify UUIDs from QR codes while maintaining backward compatibility with hash-based QRs. Ensure proper error handling for both UUID and legacy formats.
+Phase 4: Frontend Updates
+Prompt 8: Update Security Page JavaScript
+In the file `static/js/security.js`, update the JavaScript functions to handle UUID-based responses from the backend. Modify the result display functions (`formatPreregisterResult`, `formatSecureQrResult`, etc.) to properly show UUID information instead of hash-based IDs. Update the `SecurityManager` class to store and manage UUID-based tokens in localStorage.
+Prompt 9: Update Security HTML Template
+Modify the file `templates/security.html` to display UUID information in a user-friendly format. Update the result display sections to show "Document ID" instead of "Registration ID" and ensure UUIDs are displayed in a readable format (with proper formatting and copy functionality). Add tooltips or help text to explain the UUID system to users.
+Phase 5: Database and Storage Migration
+Prompt 10: Create Migration Utility
+Create a new file `migration_utils.py` in the root directory to handle migration from hash-based to UUID-based storage. Implement functions to convert existing binding records from hash-based filenames to UUID-based ones. Include a backup mechanism and validation to ensure data integrity during migration. Add logging to track the migration process.
+Prompt 11: Update Main Application Integration
+In the file `main.py`, update the document embedding functions (`embed_watermark_to_docx` and `embed_watermark_to_pdf`) to work with UUID-based security configuration. Ensure the security_config parameter handling supports UUID-based binding tokens and update any direct calls to security functions to use the new UUID format.
+Phase 6: Testing and Validation
+Prompt 12: Add UUID Validation
+Create validation functions in `document_security.py` to ensure UUID format correctness throughout the system. Add UUID format validation in all input handling functions and create helper functions to convert between different UUID representations (with/without hyphens). Include proper error handling for invalid UUID formats.
+Prompt 13: Update Error Handling
+Review and update error handling across all files (`app.py`, `secure_qr_utils.py`, `document_security.py`) to provide meaningful error messages for UUID-related issues. Ensure that validation errors clearly distinguish between UUID format errors, missing UUIDs, and binding validation failures. Update logging to include UUID information for better debugging.
+
+📋 Migration Checklist
+After running all prompts, verify:
+
+ UUID generation works in document fingerprinting
+ Storage uses UUID as primary key
+ QR codes contain UUID information
+ Frontend displays UUIDs properly
+ Backward compatibility with hash-based QRs
+ Error handling covers UUID scenarios
+ Migration utility works correctly
