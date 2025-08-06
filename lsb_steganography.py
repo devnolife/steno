@@ -87,7 +87,8 @@ def _resize_qr_for_capacity(qr_img, max_capacity: int):
     return resized_qr
 
 
-def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_path: str, resize_qr_if_needed: bool = True):
+def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_path: str, 
+                     resize_qr_if_needed: bool = True, progress_callback=None):
     """
     Menyisipkan citra QR Code ke dalam LSB channel Biru dari citra penampung.
 
@@ -96,6 +97,7 @@ def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_pa
         qr_image_path (str): Path ke citra QR Code yang akan disembunyikan (harus hitam putih).
         output_stego_path (str): Path untuk menyimpan citra hasil (harus PNG).
         resize_qr_if_needed (bool): Jika True, QR code akan diresize otomatis agar muat dalam kapasitas.
+        progress_callback (callable): Optional callback function to report progress (progress_percent, message)
 
     Raises:
         FileNotFoundError: Jika file input tidak ditemukan.
@@ -177,7 +179,8 @@ def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_pa
         stego_img = cover_img.copy()  # Salin citra asli untuk dimodifikasi
         pixels_processed = 0
 
-        # 6. Proses penyisipan bit ke LSB channel Biru
+        # 6. Proses penyisipan bit ke LSB channel Biru dengan progress tracking
+        total_pixels = cover_width * cover_height
         for y in range(cover_height):
             for x in range(cover_width):
                 try:
@@ -190,9 +193,17 @@ def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_pa
                     # Update piksel di citra stego
                     stego_img.putpixel((x, y), (r, g, new_b))
                     pixels_processed += 1
+                    
+                    # Report progress every 1000 pixels or at completion
+                    if progress_callback and (pixels_processed % 1000 == 0 or pixels_processed == total_bits_to_embed):
+                        progress_percent = (pixels_processed / total_bits_to_embed) * 100
+                        progress_callback(progress_percent, f"Embedding LSB data: {pixels_processed}/{total_bits_to_embed} pixels")
+                        
                 except StopIteration:
                     # Jika iterator habis (semua bit sudah disisipkan)
                     print(f"[*] Penyisipan selesai. {pixels_processed} piksel dimodifikasi.")
+                    if progress_callback:
+                        progress_callback(100, f"LSB embedding completed. {pixels_processed} pixels modified.")
                     # Simpan stego image dalam format PNG
                     stego_img.save(output_stego_path, "PNG")
                     print(f"[*] Stego image disimpan di: {output_stego_path}")
@@ -200,6 +211,8 @@ def embed_qr_to_image(cover_image_path: str, qr_image_path: str, output_stego_pa
 
         # Baris ini seharusnya tidak tercapai jika kapasitas cukup
         print("[!] Warning: Loop selesai tapi tidak semua bit tersisip? Cek logika kapasitas.")
+        if progress_callback:
+            progress_callback(100, "Warning: Loop completed but not all bits embedded")
 
     # Menangani error spesifik dan umum
     except FileNotFoundError as e:

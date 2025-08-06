@@ -373,8 +373,90 @@ def replace_images_in_pdf(pdf_path: str, original_images: List[str],
         return False
 
 
+def embed_watermark_to_docx_with_progress(docx_path: str, qr_path: str = None, output_path: str = None, 
+                                         qr_data: str = None, security_config: dict = None, progress_callback=None) -> dict:
+    """
+    Process a docx document to add QR watermarks to all images with progress tracking.
+    
+    Args:
+        docx_path: Path to the original .docx file
+        qr_path: Path to the QR code image to embed (optional if qr_data provided)
+        output_path: Path to save the watermarked document
+        qr_data: Text data to generate QR code from (optional if qr_path provided)
+        security_config: Optional security configuration for QR generation
+        progress_callback: Optional callback function to report progress (progress_percent, message)
+
+    Returns:
+        dict: Result dictionary with success status and processed image info
+    """
+    def internal_progress(progress, message):
+        if progress_callback:
+            progress_callback("LSB Embedding", message, progress)
+    
+    # Call original function with progress
+    original_embed_qr = embed_qr_to_image
+    
+    def embed_with_progress(*args, **kwargs):
+        kwargs['progress_callback'] = internal_progress
+        return original_embed_qr(*args, **kwargs)
+    
+    # Temporarily replace the function
+    import lsb_steganography
+    original_func = lsb_steganography.embed_qr_to_image
+    lsb_steganography.embed_qr_to_image = embed_with_progress
+    
+    try:
+        # Call the original function
+        result = embed_watermark_to_docx(docx_path, qr_path, output_path, qr_data, security_config)
+        return result
+    finally:
+        # Restore original function
+        lsb_steganography.embed_qr_to_image = original_func
+
+
+def embed_watermark_to_pdf_with_progress(pdf_path: str, qr_path: str = None, output_path: str = None,
+                                        qr_data: str = None, security_config: dict = None, progress_callback=None) -> dict:
+    """
+    Process a PDF document to add QR watermarks to all images with progress tracking.
+    
+    Args:
+        pdf_path: Path to the original .pdf file  
+        qr_path: Path to the QR code image to embed (optional if qr_data provided)
+        output_path: Path to save the watermarked document
+        qr_data: Text data to generate QR code from (optional if qr_path provided)
+        security_config: Optional security configuration for QR generation
+        progress_callback: Optional callback function to report progress (progress_percent, message)
+
+    Returns:
+        dict: Result dictionary with success status and processed image info
+    """
+    def internal_progress(progress, message):
+        if progress_callback:
+            progress_callback("LSB Embedding", message, progress)
+    
+    # Call original function with progress
+    original_embed_qr = embed_qr_to_image
+    
+    def embed_with_progress(*args, **kwargs):
+        kwargs['progress_callback'] = internal_progress
+        return original_embed_qr(*args, **kwargs)
+    
+    # Temporarily replace the function
+    import lsb_steganography
+    original_func = lsb_steganography.embed_qr_to_image
+    lsb_steganography.embed_qr_to_image = embed_with_progress
+    
+    try:
+        # Call the original function
+        result = embed_watermark_to_pdf(pdf_path, qr_path, output_path, qr_data, security_config)
+        return result
+    finally:
+        # Restore original function
+        lsb_steganography.embed_qr_to_image = original_func
+
+
 def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: str = None, 
-                          qr_data: str = None, security_config: dict = None) -> dict:
+                          qr_data: str = None, security_config: dict = None, progress_callback=None) -> dict:
     """
     Process a docx document to add QR watermarks to all images.
 

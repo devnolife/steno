@@ -1,8 +1,5 @@
 // Secure Document Embedding - Integrated Workflow Handler
 document.addEventListener('DOMContentLoaded', function () {
-  // Initialize network monitoring
-  initNetworkMonitoring();
-
   // Initialize the integrated embed form
   initializeEmbedForm();
 
@@ -14,13 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Initialize real-time QR preview
   initQRPreview();
-
-  // Initialize results tabs and accordion
-  initializeResultsTabs();
-  initializeAccordion();
-
-  // Initialize grid navigation
-  initializeGridNavigation();
 });
 
 function initializeEmbedForm() {
@@ -31,165 +21,6 @@ function initializeEmbedForm() {
     e.preventDefault();
     await handleIntegratedEmbedding(this);
   });
-
-  // Initialize document file handling
-  initDocumentFileHandling();
-}
-
-function initDocumentFileHandling() {
-  const documentFileInput = document.getElementById('documentFile');
-  if (!documentFileInput) return;
-
-  documentFileInput.addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (file) {
-      showDocumentPreview(file);
-      // Simulate document analysis for image detection
-      analyzeDocumentForImages(file);
-    } else {
-      hideDocumentPreview();
-    }
-  });
-}
-
-function showDocumentPreview(file) {
-  const preview = document.getElementById('documentPreview');
-  const filename = document.getElementById('previewFilename');
-  const size = document.getElementById('previewSize');
-
-  if (!preview || !filename || !size) return;
-
-  // Format file size
-  const fileSize = formatFileSize(file.size);
-
-  // Update preview information
-  filename.textContent = file.name;
-  size.textContent = fileSize;
-
-  // Show preview
-  preview.style.display = 'block';
-}
-
-function hideDocumentPreview() {
-  const preview = document.getElementById('documentPreview');
-  if (preview) {
-    preview.style.display = 'none';
-  }
-  hideAllStatusIndicators();
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-async function analyzeDocumentForImages(file) {
-  // Show checking status
-  showStatusIndicator('checking');
-
-  try {
-    // Create a FormData to send the file for analysis
-    const formData = new FormData();
-    formData.append('documentFile', file);
-
-    // This is a mock analysis - in a real implementation, you might want to
-    // create a separate endpoint for document analysis
-    // For now, we'll simulate the analysis based on file type and name
-
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock analysis logic
-    const fileName = file.name.toLowerCase();
-    const hasLikelyImages = fileName.includes('image') ||
-      fileName.includes('gambar') ||
-      fileName.includes('foto') ||
-      fileName.includes('picture') ||
-      file.size > 500000; // Assume larger files might have images
-
-    if (hasLikelyImages) {
-      const mockImageCount = Math.floor(Math.random() * 5) + 1;
-      showStatusIndicator('has-images', mockImageCount);
-    } else {
-      showStatusIndicator('no-images');
-    }
-
-  } catch (error) {
-    console.error('Error analyzing document:', error);
-    showStatusIndicator('error', 0, error.message);
-  }
-}
-
-function showStatusIndicator(type, imageCount = 0, errorMessage = '') {
-  hideAllStatusIndicators();
-
-  const statusMap = {
-    'checking': 'statusChecking',
-    'has-images': 'statusHasImages',
-    'no-images': 'statusNoImages',
-    'error': 'statusError'
-  };
-
-  const elementId = statusMap[type];
-  const element = document.getElementById(elementId);
-
-  if (!element) return;
-
-  if (type === 'has-images' && imageCount > 0) {
-    const countElement = document.getElementById('imageCount');
-    if (countElement) {
-      countElement.textContent = imageCount;
-    }
-  }
-
-  if (type === 'error' && errorMessage) {
-    const errorDesc = document.getElementById('errorDescription');
-    if (errorDesc) {
-      errorDesc.textContent = errorMessage;
-    }
-  }
-
-  element.style.display = 'flex';
-}
-
-function hideAllStatusIndicators() {
-  const indicators = ['statusChecking', 'statusHasImages', 'statusNoImages', 'statusError'];
-  indicators.forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.style.display = 'none';
-    }
-  });
-}
-
-// Global functions for button actions
-function showImageRequirements() {
-  // Scroll to requirements section
-  const requirements = document.querySelector('.document-requirements');
-  if (requirements) {
-    requirements.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Add a highlight effect
-    requirements.style.transform = 'scale(1.02)';
-    requirements.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.3)';
-
-    setTimeout(() => {
-      requirements.style.transform = '';
-      requirements.style.boxShadow = '';
-    }, 2000);
-  }
-}
-
-function retryDocumentAnalysis() {
-  const fileInput = document.getElementById('documentFile');
-  const file = fileInput?.files[0];
-
-  if (file) {
-    analyzeDocumentForImages(file);
-  }
 }
 
 function initQRInputMode() {
@@ -200,33 +31,26 @@ function initQRInputMode() {
   const securityValidation = document.getElementById('securityValidation');
   const embedButtonText = document.getElementById('embedButtonText');
 
-  if (!radioButtons.length || !qrTextSection || !qrFileSection || !embedButtonText) {
-    console.warn('QR input mode elements not found in DOM');
-    return;
-  }
-
   radioButtons.forEach(radio => {
     radio.addEventListener('change', function () {
       if (this.value === 'text') {
         qrTextSection.style.display = 'block';
         qrFileSection.style.display = 'none';
-        if (qrPreviewSection) qrPreviewSection.style.display = 'block';
-        if (securityValidation) securityValidation.style.display = 'none';
+        qrPreviewSection.style.display = 'block';
+        securityValidation.style.display = 'none';
         embedButtonText.textContent = 'Generate & Embed Secure QR';
 
         // Clear file input
-        const qrFileInput = document.getElementById('qrFile');
-        if (qrFileInput) qrFileInput.value = '';
+        document.getElementById('qrFile').value = '';
       } else {
         qrTextSection.style.display = 'none';
         qrFileSection.style.display = 'block';
-        if (qrPreviewSection) qrPreviewSection.style.display = 'none';
-        if (securityValidation) securityValidation.style.display = 'block';
+        qrPreviewSection.style.display = 'none';
+        securityValidation.style.display = 'block';
         embedButtonText.textContent = 'Validate & Embed QR';
 
         // Clear text input
-        const qrDataInput = document.getElementById('qrData');
-        if (qrDataInput) qrDataInput.value = '';
+        document.getElementById('qrData').value = '';
         clearQRPreview();
       }
     });
@@ -288,24 +112,14 @@ async function generateQRPreview(text) {
     // Show loading state
     qrPreview.innerHTML = '<div class="qr-loading"><i class="fas fa-spinner fa-spin"></i><span>Generating preview...</span></div>';
 
-    // Add timeout and better error handling for QR preview
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
-
+    // Make request to generate QR preview
     const response = await fetch('/generate_qr_preview', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ data: text }),
-      signal: controller.signal
+      body: JSON.stringify({ data: text })
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
-    }
 
     const result = await response.json();
 
@@ -322,15 +136,7 @@ async function generateQRPreview(text) {
     }
   } catch (error) {
     console.error('QR preview error:', error);
-
-    let errorMessage = 'Preview unavailable';
-    if (error.name === 'AbortError') {
-      errorMessage = 'Preview timeout';
-    } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      errorMessage = 'Network error';
-    }
-
-    qrPreview.innerHTML = `<div class="qr-error"><i class="fas fa-exclamation-triangle"></i><span>${errorMessage}</span></div>`;
+    qrPreview.innerHTML = '<div class="qr-error"><i class="fas fa-exclamation-triangle"></i><span>Preview unavailable</span></div>';
   }
 }
 
@@ -392,66 +198,6 @@ function updateSecurityStatus(expiryHours) {
   securitySubtitle.textContent = `QR binding expires in ${timeText}`;
 }
 
-// Separate function to make embed request with proper error handling
-async function makeEmbedRequest(formData) {
-  let response;
-  try {
-    // Add timeout to prevent hanging requests
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
-
-    response = await fetch('/embed_document_secure', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    // Check if response is ok
-    if (!response.ok) {
-      let errorMessage = `Server error: ${response.status} ${response.statusText}`;
-
-      // Try to get more detailed error from response
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (jsonError) {
-        // If can't parse JSON, use status text
-        console.warn('Could not parse error response as JSON:', jsonError);
-      }
-
-      throw new Error(errorMessage);
-    }
-
-  } catch (fetchError) {
-    if (fetchError.name === 'AbortError') {
-      throw new Error('Request timeout - Please try again with a smaller file or check your internet connection');
-    } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
-      throw new Error('Network error - Please check your internet connection and try again');
-    } else {
-      throw fetchError; // Re-throw other errors
-    }
-  }
-
-  // Update progress to step 3
-  updateProgressStep(3, 'Processing document...');
-
-  let result;
-  try {
-    result = await response.json();
-  } catch (jsonError) {
-    console.error('Failed to parse response as JSON:', jsonError);
-    throw new Error('Invalid response from server - please try again');
-  }
-
-  return result;
-}
-
 async function handleIntegratedEmbedding(form) {
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.innerHTML;
@@ -498,83 +244,42 @@ async function handleIntegratedEmbedding(form) {
     // Update progress to step 2
     updateProgressStep(2, 'Generating QR code...');
 
-    // Make request to integrated endpoint with retry mechanism
-    const maxRetries = 2;
-    let result = null;
+    // Make request to integrated endpoint
+    const response = await fetch('/embed_document_secure', {
+      method: 'POST',
+      body: formData
+    });
 
-    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      try {
-        // Update progress message to show retry attempt
-        if (attempt > 1) {
-          updateProgressStep(2, `Mencoba ulang... (${attempt - 1}/${maxRetries})`);
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+    const result = await response.json();
 
-        result = await makeEmbedRequest(formData);
-        break; // Success, exit retry loop
+    if (result.success && result.tracking_enabled) {
+      // Start progress tracking with the process ID using the new ProgressTracker
+      const progressTracker = new ProgressTracker(result.process_id);
 
-      } catch (requestError) {
-        console.log(`Attempt ${attempt} failed:`, requestError.message);
+      // Store original button text
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.dataset.originalText = originalText;
 
-        // If this is the last attempt, throw the error
-        if (attempt === maxRetries + 1) {
-          throw requestError;
-        }
-
-        // For network errors, wait longer before retry
-        if (requestError.message.includes('Network error') ||
-          requestError.message.includes('timeout')) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-      }
-    }
-
-    if (result.success) {
-      // Update progress to completion
+      await progressTracker.startTracking();
+    } else if (result.success) {
+      // Fallback to old method without tracking
       updateProgressStep(4, 'Complete!');
-
-      // Display results
       await displayIntegratedResults(result);
-
-      // Don't show generic success message here - it's handled in displayIntegratedResults
+      showAlert('Document embedding completed successfully!', 'success');
     } else {
       // Handle specific error types
       if (result.security_error) {
         await handleSecurityError(result);
-      } else if (result.error_type === 'NO_IMAGES_FOUND') {
-        showNoImagesFoundError(result);
       } else {
-        showAlert(result.message || 'Embedding process failed', 'error');
+        throw new Error(result.message || 'Embedding process failed');
       }
-
-      hideProgressContainer();
     }
 
   } catch (error) {
     console.error('Embedding error:', error);
-
-    // Provide more specific error messages based on error type
-    let userMessage = error.message || 'An error occurred during processing';
-
-    // Check if it's a network-related error
-    if (error.message && (
-      error.message.includes('Network error') ||
-      error.message.includes('Failed to fetch') ||
-      error.message.includes('NetworkError') ||
-      error.message.includes('timeout')
-    )) {
-      userMessage = 'Koneksi jaringan bermasalah. Silakan:';
-      showDetailedNetworkError();
-    } else if (error.message && error.message.includes('Server error')) {
-      userMessage = 'Server sedang mengalami masalah. Silakan coba lagi dalam beberapa saat.';
-    } else if (error.message && error.message.includes('Invalid response')) {
-      userMessage = 'Respons server tidak valid. Silakan refresh halaman dan coba lagi.';
-    }
-
-    showAlert(userMessage, 'error');
+    showAlert(error.message || 'An error occurred during processing', 'error');
     hideProgressContainer();
-  } finally {
+
     // Reset button
     submitBtn.innerHTML = originalText;
     submitBtn.disabled = false;
@@ -647,35 +352,31 @@ function updateProgressStep(stepNumber, message) {
 }
 
 async function displayIntegratedResults(result) {
+  const resultsPanel = document.getElementById('resultsPanel');
+  resultsPanel.style.display = 'block';
+
   // Hide progress container
   hideProgressContainer();
 
-  // Show results with new tab system
-  updateResultsDisplay(result);
+  // Display document download
+  displayDocumentDownload(result.document);
+
+  // Display QR information
+  displayQRInformation(result.qr);
+
+  // Display security information if available
+  if (result.security && result.security.security_level !== 'none') {
+    displaySecurityInformation(result.security);
+  }
 
   // Display quality metrics
   if (result.quality_metrics) {
     displayQualityMetrics(result.quality_metrics);
   }
 
-  // Display processed images with improved loading handling
+  // Display processed images
   if (result.processed_images && result.processed_images.length > 0) {
     displayProcessedImages(result.processed_images, result.public_dir);
-
-    // Show informative message about image loading instead of warning
-    showAlert(`Proses embedding berhasil! ${result.processed_images.length} gambar sedang dimuat...`, 'success');
-
-    // Clear success message after images are expected to load
-    setTimeout(() => {
-      clearAlert();
-      // Show final success message without network implications
-      showAlert('Semua proses telah selesai dengan sukses!', 'success');
-      setTimeout(() => clearAlert(), 3000);
-    }, 6000); // Wait longer to ensure images are loaded
-  } else {
-    // No images to process - show completion message
-    showAlert('Proses embedding berhasil diselesaikan!', 'success');
-    setTimeout(() => clearAlert(), 3000);
   }
 }
 
@@ -758,13 +459,7 @@ function displaySecurityInformation(securityInfo) {
 function displayQualityMetrics(metrics) {
   const embedMetrics = document.getElementById('embedMetrics');
 
-  if (!embedMetrics) {
-    console.warn('Embed metrics element not found');
-    return;
-  }
-
-  if (metrics && metrics.mse !== undefined && metrics.mse !== null &&
-    metrics.psnr !== undefined && metrics.psnr !== null) {
+  if (metrics.mse !== undefined && metrics.psnr !== undefined) {
     embedMetrics.innerHTML = `
             <div class="metrics-grid">
                 <div class="metric-item">
@@ -785,236 +480,34 @@ function displayQualityMetrics(metrics) {
 }
 
 function displayProcessedImages(processedImages, publicDir) {
-  const gridContainer = document.getElementById('processedImagesGrid');
-  const gridLoading = document.getElementById('gridLoading');
-  const gridEmpty = document.getElementById('gridEmpty');
-
-  if (!gridContainer) {
-    console.warn('Grid container not found');
-    return;
-  }
+  const processedImagesContainer = document.getElementById('processedImages');
 
   if (!processedImages || processedImages.length === 0) {
-    gridEmpty.style.display = 'block';
-    gridLoading.style.display = 'none';
+    processedImagesContainer.innerHTML = '<p>No images were processed</p>';
     return;
   }
 
-  // Hide empty state and show loading
-  gridEmpty.style.display = 'none';
-  gridLoading.style.display = 'flex';
+  let imagesHtml = '<div class="image-comparison-grid">';
 
-  // Debug logging
-  console.log('Processing images for grid:', processedImages);
-
-  // Clear existing grid items except loading/empty states
-  const existingItems = gridContainer.querySelectorAll('.result-grid-item');
-  existingItems.forEach(item => item.remove());
-
-  // Generate grid items
   processedImages.forEach((imageInfo, index) => {
-    console.log(`Creating grid item ${index}:`, imageInfo);
-
-    // Construct proper image URLs
-    let originalUrl, watermarkedUrl;
-
-    if (imageInfo.original) {
-      originalUrl = `/static/generated/${imageInfo.original}`;
-    }
-
-    if (imageInfo.watermarked) {
-      watermarkedUrl = `/static/generated/${imageInfo.watermarked}`;
-    }
-
-    // Create grid item
-    const gridItem = document.createElement('div');
-    gridItem.className = 'result-grid-item';
-    gridItem.innerHTML = `
-      <div class="grid-status-badge success">Success</div>
-      
-      <div class="grid-item-header">
-        <div class="grid-item-icon">
-          <i class="fas fa-image"></i>
-        </div>
-        <div class="grid-item-title">
-          <h4>Gambar ${index + 1}</h4>
-          <p class="grid-item-subtitle">LSB Steganografi</p>
-        </div>
-      </div>
-
-      <div class="grid-item-preview">
-        ${watermarkedUrl ? `
-          <img src="${watermarkedUrl}" 
-               alt="Gambar dengan QR Watermark ${index + 1}"
-               onload="this.parentElement.classList.add('loaded')"
-               onerror="this.parentElement.classList.add('error')">
-        ` : `
-          <div class="placeholder-content">
-            <i class="fas fa-image"></i>
-            <p>Gambar tidak tersedia</p>
-          </div>
-        `}
-      </div>
-
-      <div class="grid-item-metrics">
-        <div class="grid-metric">
-          <div class="grid-metric-value">✓</div>
-          <div class="grid-metric-label">Status</div>
-        </div>
-        <div class="grid-metric">
-          <div class="grid-metric-value">LSB</div>
-          <div class="grid-metric-label">Metode</div>
-        </div>
-        <div class="grid-metric">
-          <div class="grid-metric-value">${index + 1}</div>
-          <div class="grid-metric-label">Index</div>
-        </div>
-      </div>
-
-      <div class="grid-item-actions">
-        <a href="${originalUrl || '#'}" target="_blank" class="grid-action-btn secondary" title="Lihat gambar asli">
-          <i class="fas fa-eye"></i>
-          Original
-        </a>
-        <a href="${watermarkedUrl || '#'}" target="_blank" class="grid-action-btn primary" title="Lihat gambar watermark">
-          <i class="fas fa-shield-alt"></i>
-          Watermark
-        </a>
-      </div>
-    `;
-
-    gridContainer.appendChild(gridItem);
+    imagesHtml += `
+            <div class="image-comparison-item">
+                <div class="image-pair">
+                    <div class="image-container">
+                        <img src="/static/${imageInfo.original}" alt="Original Image ${index + 1}">
+                        <div class="image-label">Original</div>
+                    </div>
+                    <div class="image-container">
+                        <img src="/static/${imageInfo.watermarked}" alt="Watermarked Image ${index + 1}">
+                        <div class="image-label">Watermarked</div>
+                    </div>
+                </div>
+            </div>
+        `;
   });
 
-  // Hide loading state
-  setTimeout(() => {
-    gridLoading.style.display = 'none';
-    initializeGridNavigation();
-    validateImageDisplay(processedImages);
-  }, 1000);
-
-  // Update results count
-  const resultsCount = document.querySelector('.results-count');
-  if (resultsCount) {
-    resultsCount.textContent = `${processedImages.length} gambar`;
-  }
-}
-
-// Initialize grid navigation functionality
-function initializeGridNavigation() {
-  const gridContainer = document.getElementById('processedImagesGrid');
-  const leftBtn = document.getElementById('gridNavLeft');
-  const rightBtn = document.getElementById('gridNavRight');
-  const normalViewBtn = document.getElementById('gridViewNormal');
-  const compactViewBtn = document.getElementById('gridViewCompact');
-
-  if (!gridContainer || !leftBtn || !rightBtn) return;
-
-  // Grid navigation
-  function updateNavButtons() {
-    const scrollLeft = gridContainer.scrollLeft;
-    const scrollWidth = gridContainer.scrollWidth;
-    const clientWidth = gridContainer.clientWidth;
-
-    leftBtn.disabled = scrollLeft <= 0;
-    rightBtn.disabled = scrollLeft >= scrollWidth - clientWidth - 10;
-  }
-
-  function scrollGrid(direction) {
-    const scrollAmount = 300; // Scroll by 300px
-    const currentScroll = gridContainer.scrollLeft;
-    const targetScroll = direction === 'left'
-      ? currentScroll - scrollAmount
-      : currentScroll + scrollAmount;
-
-    gridContainer.scrollTo({
-      left: targetScroll,
-      behavior: 'smooth'
-    });
-  }
-
-  // Event listeners for navigation
-  leftBtn.addEventListener('click', () => scrollGrid('left'));
-  rightBtn.addEventListener('click', () => scrollGrid('right'));
-  gridContainer.addEventListener('scroll', updateNavButtons);
-
-  // View toggle functionality
-  if (normalViewBtn && compactViewBtn) {
-    normalViewBtn.addEventListener('click', () => {
-      gridContainer.classList.remove('compact');
-      normalViewBtn.classList.add('active');
-      compactViewBtn.classList.remove('active');
-      setTimeout(updateNavButtons, 100);
-    });
-
-    compactViewBtn.addEventListener('click', () => {
-      gridContainer.classList.add('compact');
-      compactViewBtn.classList.add('active');
-      normalViewBtn.classList.remove('active');
-      setTimeout(updateNavButtons, 100);
-    });
-  }
-
-  // Initial nav button state
-  setTimeout(updateNavButtons, 100);
-}
-
-function validateImageDisplay(processedImages) {
-  console.log('Validating grid image display...');
-
-  const gridItems = document.querySelectorAll('.result-grid-item');
-  let successCount = 0;
-  let totalImages = processedImages.length; // Grid shows watermarked images primarily
-
-  gridItems.forEach((item, index) => {
-    const img = item.querySelector('.grid-item-preview img');
-    if (img) {
-      if (img.complete && img.naturalWidth > 0) {
-        successCount++;
-        item.classList.add('image-loaded');
-        console.log(`Grid image ${index} loaded successfully`);
-      } else {
-        item.classList.add('image-error');
-        console.warn(`Grid image ${index} failed to load:`, img.src);
-      }
-    }
-  });
-
-  console.log(`Grid validation: ${successCount}/${totalImages} images loaded`);
-
-  // Enhanced final validation after additional delay
-  setTimeout(() => {
-    validateImageDisplayFinal(processedImages);
-  }, 2000);
-}
-
-function validateImageDisplayFinal(processedImages) {
-  console.log('Final validation of grid image display...');
-
-  const gridItems = document.querySelectorAll('.result-grid-item');
-  let successCount = 0;
-  let totalImages = processedImages.length;
-
-  gridItems.forEach((item, index) => {
-    const img = item.querySelector('.grid-item-preview img');
-    if (img && img.complete && img.naturalWidth > 0) {
-      successCount++;
-      item.classList.add('image-loaded');
-    } else {
-      item.classList.add('image-error');
-    }
-  });
-
-  console.log(`Final grid validation: ${successCount}/${totalImages} images loaded`);
-
-  if (successCount < totalImages) {
-    const failedCount = totalImages - successCount;
-    if (failedCount > totalImages / 2) {
-      showAlert(`${failedCount} dari ${totalImages} gambar masih dimuat. Proses embedding berhasil. Tunggu sebentar atau refresh halaman.`, 'info');
-    }
-  } else {
-    console.log('All grid images loaded successfully!');
-  }
+  imagesHtml += '</div>';
+  processedImagesContainer.innerHTML = imagesHtml;
 }
 
 function getQualityRating(psnr) {
@@ -1041,49 +534,15 @@ async function handleSecurityError(result) {
 }
 
 function hideResults() {
-  const embedResult = document.getElementById('embedResult');
-  embedResult.style.display = 'none';
-
-  const securityResultSection = document.getElementById('securityResultSection');
-  securityResultSection.style.display = 'none';
-}
-
-function showNoImagesFoundError(result) {
-  const alertElement = document.getElementById('embedAlert');
-  alertElement.className = 'alert alert-warning';
-
-  // Create detailed error message with recommendations
-  let errorHTML = `
-    <div class="error-header">
-      <i class="fas fa-exclamation-triangle"></i>
-      <strong>Dokumen Tidak Mengandung Gambar</strong>
-    </div>
-    <div class="error-content">
-      <p>${result.message}</p>
-  `;
-
-  // Add recommendations if available
-  if (result.recommendations && result.recommendations.length > 0) {
-    errorHTML += `
-      <div class="error-recommendations">
-        <h5><i class="fas fa-lightbulb"></i> Rekomendasi:</h5>
-        <ul>
-    `;
-
-    result.recommendations.forEach(recommendation => {
-      errorHTML += `<li><i class="fas fa-arrow-right"></i> ${recommendation}</li>`;
-    });
-
-    errorHTML += `
-        </ul>
-      </div>
-    `;
+  const resultsPanel = document.getElementById('resultsPanel');
+  if (resultsPanel) {
+    resultsPanel.style.display = 'none';
   }
 
-  errorHTML += `</div>`;
-
-  alertElement.innerHTML = errorHTML;
-  alertElement.style.display = 'block';
+  const securityResultSection = document.getElementById('securityResultSection');
+  if (securityResultSection) {
+    securityResultSection.style.display = 'none';
+  }
 }
 
 function showAlert(message, type = 'info') {
@@ -1096,220 +555,4 @@ function showAlert(message, type = 'info') {
 function clearAlert() {
   const alertElement = document.getElementById('embedAlert');
   alertElement.style.display = 'none';
-}
-
-// Network error handling with detailed troubleshooting
-function showDetailedNetworkError() {
-  const alertElement = document.getElementById('embedAlert');
-  alertElement.className = 'alert alert-error';
-
-  const networkTips = [
-    'Periksa koneksi internet Anda',
-    'Coba refresh halaman dan ulangi proses',
-    'Pastikan file dokumen tidak terlalu besar (max 50MB)',
-    'Gunakan browser yang mendukung (Chrome, Firefox, Edge)',
-    'Nonaktifkan ad-blocker atau firewall yang mungkin memblokir',
-    'Coba lagi dalam beberapa menit'
-  ];
-
-  let errorHTML = `
-    <div class="error-header">
-      <i class="fas fa-wifi"></i>
-      <strong>Error Koneksi Jaringan</strong>
-    </div>
-    <div class="error-content">
-      <p>Proses embedding gagal karena masalah koneksi. Silakan coba langkah-langkah berikut:</p>
-      <div class="error-recommendations">
-        <ul>
-  `;
-
-  networkTips.forEach(tip => {
-    errorHTML += `<li><i class="fas fa-arrow-right"></i> ${tip}</li>`;
-  });
-
-  errorHTML += `
-        </ul>
-      </div>
-    </div>
-  `;
-
-  alertElement.innerHTML = errorHTML;
-  alertElement.style.display = 'block';
-
-  // Auto-hide after 10 seconds
-  setTimeout(() => {
-    alertElement.style.display = 'none';
-  }, 10000);
-}
-
-// Check network connectivity
-function checkNetworkConnection() {
-  return navigator.onLine;
-}
-
-// Monitor network status
-function initNetworkMonitoring() {
-  window.addEventListener('online', function () {
-    console.log('Network connection restored');
-    showAlert('Koneksi internet pulih. Anda dapat melanjutkan proses.', 'success');
-  });
-
-  window.addEventListener('offline', function () {
-    console.log('Network connection lost');
-    showAlert('Koneksi internet terputus. Periksa koneksi Anda.', 'warning');
-  });
-}
-
-// Initialize Results Tabs
-function initializeResultsTabs() {
-  const tabButtons = document.querySelectorAll('.results-tab-btn');
-  const tabPanes = document.querySelectorAll('.results-tab-pane');
-
-  if (!tabButtons.length || !tabPanes.length) return;
-
-  tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const targetTab = button.getAttribute('data-tab');
-
-      // Remove active class from all buttons and panes
-      tabButtons.forEach(btn => btn.classList.remove('active'));
-      tabPanes.forEach(pane => pane.classList.remove('active'));
-
-      // Add active class to clicked button and corresponding pane
-      button.classList.add('active');
-      const targetPane = document.getElementById(`tab-${targetTab}`);
-      if (targetPane) {
-        targetPane.classList.add('active');
-      }
-
-      // Update grid navigation if images tab is activated
-      if (targetTab === 'images') {
-        setTimeout(() => {
-          updateGridNavigation();
-        }, 100);
-      }
-    });
-  });
-}
-
-// Initialize Accordion
-function initializeAccordion() {
-  const accordionHeaders = document.querySelectorAll('.accordion-header');
-
-  accordionHeaders.forEach(header => {
-    header.addEventListener('click', () => {
-      const targetId = header.getAttribute('data-target');
-      const content = document.getElementById(targetId);
-      const isActive = header.classList.contains('active');
-
-      // Close all accordion items
-      accordionHeaders.forEach(h => {
-        h.classList.remove('active');
-        const c = document.getElementById(h.getAttribute('data-target'));
-        if (c) c.classList.remove('active');
-      });
-
-      // If item wasn't active, open it
-      if (!isActive) {
-        header.classList.add('active');
-        if (content) content.classList.add('active');
-      }
-    });
-  });
-}
-
-// Update Grid Navigation (helper function)
-function updateGridNavigation() {
-  const gridContainer = document.getElementById('processedImagesGrid');
-  const leftBtn = document.getElementById('gridNavLeft');
-  const rightBtn = document.getElementById('gridNavRight');
-
-  if (!gridContainer || !leftBtn || !rightBtn) return;
-
-  const scrollLeft = gridContainer.scrollLeft;
-  const scrollWidth = gridContainer.scrollWidth;
-  const clientWidth = gridContainer.clientWidth;
-
-  leftBtn.disabled = scrollLeft <= 0;
-  rightBtn.disabled = scrollLeft >= scrollWidth - clientWidth - 10;
-}
-
-// Update results display functions
-function updateResultsDisplay(result) {
-  const resultsPanel = document.getElementById('resultsPanel');
-  if (resultsPanel) {
-    resultsPanel.style.display = 'block';
-  }
-
-  // Update overview tab with download links
-  updateOverviewTab(result);
-
-  // Update image stats
-  updateImageStats(result);
-
-  // Show default overview tab
-  const overviewTab = document.querySelector('[data-tab="overview"]');
-  if (overviewTab) {
-    overviewTab.click();
-  }
-}
-
-function updateOverviewTab(result) {
-  // Update download links
-  const downloadContainer = document.getElementById('embedDownload');
-  if (downloadContainer && result.download_url) {
-    downloadContainer.innerHTML = `
-      <div class="download-item">
-        <a href="${result.download_url}" target="_blank" class="download-link">
-          <i class="fas fa-download"></i>
-          <span>Unduh Dokumen Watermark</span>
-          <small>PDF dengan watermark QR tersembunyi</small>
-        </a>
-      </div>
-    `;
-  }
-
-  // Update QR info
-  const qrInfoContainer = document.getElementById('qrResultInfo');
-  if (qrInfoContainer && result.qr_info) {
-    qrInfoContainer.innerHTML = `
-      <div class="qr-info-grid">
-        <div class="qr-info-item">
-          <span class="qr-info-label">Data:</span>
-          <span class="qr-info-value">${result.qr_info.data || 'N/A'}</span>
-        </div>
-        <div class="qr-info-item">
-          <span class="qr-info-label">Level Koreksi:</span>
-          <span class="qr-info-value">${result.qr_info.error_correction || 'M'}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  // Update security info if available
-  const securityCard = document.getElementById('securityCard');
-  const securityInfoContainer = document.getElementById('securityResultInfo');
-  if (result.security_enabled && securityCard && securityInfoContainer) {
-    securityCard.style.display = 'flex';
-    securityInfoContainer.innerHTML = `
-      <div class="security-summary">
-        <div class="security-level-badge">
-          <i class="fas fa-shield-check"></i>
-          <span>Level ${result.security_level || 'Standard'}</span>
-        </div>
-      </div>
-    `;
-  }
-}
-
-function updateImageStats(result) {
-  const totalCount = document.getElementById('totalImagesCount');
-  const processedCount = document.getElementById('processedImagesCount');
-
-  if (result.processed_images) {
-    const total = result.processed_images.length;
-
-    if (totalCount) totalCount.textContent = total;
-    if (processedCount) processedCount.textContent = total;
-  }
 }
