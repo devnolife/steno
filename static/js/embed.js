@@ -1,5 +1,10 @@
 // Secure Document Embedding - Integrated Workflow Handler
+let progressInterval = null;
+
 document.addEventListener('DOMContentLoaded', function () {
+  // Initialize network monitoring
+  initNetworkMonitoring();
+
   // Initialize the integrated embed form
   initializeEmbedForm();
 
@@ -21,6 +26,154 @@ function initializeEmbedForm() {
     e.preventDefault();
     await handleIntegratedEmbedding(this);
   });
+
+  // Initialize document file handling
+  initDocumentFileHandling();
+}
+
+function initDocumentFileHandling() {
+  const documentFileInput = document.getElementById('documentFile');
+  if (!documentFileInput) return;
+
+  documentFileInput.addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (file) {
+      showDocumentPreview(file);
+      // Simulate document analysis for image detection
+      analyzeDocumentForImages(file);
+    } else {
+      hideDocumentPreview();
+    }
+  });
+}
+
+function showDocumentPreview(file) {
+  const preview = document.getElementById('documentPreview');
+  const filename = document.getElementById('previewFilename');
+  const size = document.getElementById('previewSize');
+
+  if (!preview || !filename || !size) return;
+
+  // Format file size
+  const fileSize = formatFileSize(file.size);
+
+  // Update preview information
+  filename.textContent = file.name;
+  size.textContent = fileSize;
+
+  // Show preview
+  preview.style.display = 'block';
+}
+
+function hideDocumentPreview() {
+  const preview = document.getElementById('documentPreview');
+  if (preview) {
+    preview.style.display = 'none';
+  }
+  hideAllStatusIndicators();
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function analyzeDocumentForImages(file) {
+  showStatusIndicator('checking');
+
+  try {
+    const formData = new FormData();
+    formData.append('documentFile', file);
+
+    const response = await fetch('/analyze_document', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+    if (result.success && result.image_count > 0) {
+      showStatusIndicator('has-images', result.image_count);
+    } else if (result.success) {
+      showStatusIndicator('no-images');
+    } else {
+      showStatusIndicator('error', 0, result.message || 'Analysis failed');
+    }
+  } catch (error) {
+    console.error('Error analyzing document:', error);
+    showStatusIndicator('error', 0, error.message);
+  }
+}
+
+function showStatusIndicator(type, imageCount = 0, errorMessage = '') {
+  hideAllStatusIndicators();
+
+  const statusMap = {
+    'checking': 'statusChecking',
+    'has-images': 'statusHasImages',
+    'no-images': 'statusNoImages',
+    'error': 'statusError'
+  };
+
+  const elementId = statusMap[type];
+  const element = document.getElementById(elementId);
+
+  if (!element) return;
+
+  if (type === 'has-images' && imageCount > 0) {
+    const countElement = document.getElementById('imageCount');
+    if (countElement) {
+      countElement.textContent = imageCount;
+    }
+  }
+
+  if (type === 'error' && errorMessage) {
+    const errorDesc = document.getElementById('errorDescription');
+    if (errorDesc) {
+      errorDesc.textContent = errorMessage;
+    }
+  }
+
+  element.style.display = 'flex';
+}
+
+function hideAllStatusIndicators() {
+  const indicators = ['statusChecking', 'statusHasImages', 'statusNoImages', 'statusError'];
+  indicators.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = 'none';
+    }
+  });
+}
+
+// Global functions for button actions
+function showImageRequirements() {
+  // Scroll to requirements section
+  const requirements = document.querySelector('.document-requirements');
+  if (requirements) {
+    requirements.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Add a highlight effect
+    requirements.style.transform = 'scale(1.02)';
+    requirements.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.3)';
+
+    setTimeout(() => {
+      requirements.style.transform = '';
+      requirements.style.boxShadow = '';
+    }, 2000);
+  }
+}
+
+function retryDocumentAnalysis() {
+  const fileInput = document.getElementById('documentFile');
+  const file = fileInput?.files[0];
+
+  if (file) {
+    analyzeDocumentForImages(file);
+  }
 }
 
 function initQRInputMode() {
@@ -61,6 +214,8 @@ function initQRPreview() {
   const qrDataInput = document.getElementById('qrData');
   const charCount = document.getElementById('charCount');
   const capacityAnalysis = document.getElementById('capacityAnalysis');
+
+  if (!qrDataInput || !charCount || !capacityAnalysis) return;
 
   let previewTimeout;
 
@@ -157,6 +312,8 @@ function initSecurityOptions() {
   const securitySubtitle = document.getElementById('securitySubtitle');
   const securityIcon = document.getElementById('securityIcon');
 
+  if (!securityToggle || !securityConfig || !securityTitle || !securitySubtitle || !securityIcon) return;
+
   securityToggle.addEventListener('change', function () {
     if (this.checked) {
       securityConfig.style.display = 'block';
@@ -198,6 +355,65 @@ function updateSecurityStatus(expiryHours) {
   securitySubtitle.textContent = `QR binding expires in ${timeText}`;
 }
 
+// Separate function to make embed request with proper error handling
+async function makeEmbedRequest(formData) {
+  let response;
+  try {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+    const fetchPromise = fetch('/embed_document_secure', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal
+    });
+
+    updateProgressStep(3, 'Processing document...');
+    response = await fetchPromise;
+
+    clearTimeout(timeoutId);
+
+    // Check if response is ok
+    if (!response.ok) {
+      let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+
+      // Try to get more detailed error from response
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (jsonError) {
+        // If can't parse JSON, use status text
+        console.warn('Could not parse error response as JSON:', jsonError);
+      }
+
+      throw new Error(errorMessage);
+    }
+
+  } catch (fetchError) {
+    if (fetchError.name === 'AbortError') {
+      throw new Error('Request timeout - Please try again with a smaller file or check your internet connection');
+    } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+      throw new Error('Network error - Please check your internet connection and try again');
+    } else {
+      throw fetchError; // Re-throw other errors
+    }
+  }
+
+  let result;
+  try {
+    result = await response.json();
+  } catch (jsonError) {
+    console.error('Failed to parse response as JSON:', jsonError);
+    throw new Error('Invalid response from server - please try again');
+  }
+
+  return result;
+}
+
 async function handleIntegratedEmbedding(form) {
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalText = submitBtn.innerHTML;
@@ -222,6 +438,8 @@ async function handleIntegratedEmbedding(form) {
 
     // Prepare form data
     const formData = new FormData(form);
+    const processId = self.crypto?.randomUUID ? self.crypto.randomUUID() : Date.now().toString();
+    formData.append('processId', processId);
 
     // Set progress to step 1
     updateProgressStep(1, 'Preparing request...');
@@ -244,25 +462,43 @@ async function handleIntegratedEmbedding(form) {
     // Update progress to step 2
     updateProgressStep(2, 'Generating QR code...');
 
-    // Make request to integrated endpoint
-    const response = await fetch('/embed_document_secure', {
-      method: 'POST',
-      body: formData
-    });
+    // Start polling for progress
+    startProgressPolling(processId);
 
-    const result = await response.json();
+    // Make request to integrated endpoint with retry mechanism
+    const maxRetries = 2;
+    let result = null;
 
-    if (result.success && result.tracking_enabled) {
-      // Start progress tracking with the process ID using the new ProgressTracker
-      const progressTracker = new ProgressTracker(result.process_id);
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        // Update progress message to show retry attempt
+        if (attempt > 1) {
+          updateProgressStep(2, `Mencoba ulang... (${attempt - 1}/${maxRetries})`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
 
-      // Store original button text
-      const submitBtn = form.querySelector('button[type="submit"]');
-      submitBtn.dataset.originalText = originalText;
+        result = await makeEmbedRequest(formData);
+        break; // Success, exit retry loop
 
-      await progressTracker.startTracking();
-    } else if (result.success) {
-      // Fallback to old method without tracking
+      } catch (requestError) {
+        console.log(`Attempt ${attempt} failed:`, requestError.message);
+
+        // If this is the last attempt, throw the error
+        if (attempt === maxRetries + 1) {
+          throw requestError;
+        }
+
+        // For network errors, wait longer before retry
+        if (requestError.message.includes('Network error') ||
+          requestError.message.includes('timeout')) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+      }
+    }
+
+    if (result.success) {
+      // Update progress to completion
       updateProgressStep(4, 'Complete!');
       await displayIntegratedResults(result);
       showAlert('Document embedding completed successfully!', 'success');
@@ -283,6 +519,7 @@ async function handleIntegratedEmbedding(form) {
     // Reset button
     submitBtn.innerHTML = originalText;
     submitBtn.disabled = false;
+    stopProgressPolling();
   }
 }
 
@@ -349,6 +586,42 @@ function updateProgressStep(stepNumber, message) {
   const progressFill = document.querySelector('.progress-fill');
   const percentage = (stepNumber / 4) * 100;
   progressFill.style.width = `${percentage}%`;
+}
+
+function startProgressPolling(processId) {
+  const progressFill = document.querySelector('.progress-fill');
+  progressFill.style.width = '0%';
+
+  progressInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/progress/${processId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && data.total > 0) {
+        updateEmbedProgress(data.current, data.total);
+        if (data.status === 'completed' || data.current >= data.total) {
+          stopProgressPolling();
+        }
+      }
+    } catch (err) {
+      console.error('Progress polling error:', err);
+    }
+  }, 1000);
+}
+
+function stopProgressPolling() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
+}
+
+function updateEmbedProgress(current, total) {
+  const progressFill = document.querySelector('.progress-fill');
+  const percentage = Math.round((current / total) * 100);
+  progressFill.style.width = `${percentage}%`;
+  const progressText = document.getElementById('progressText');
+  progressText.textContent = `Menyematkan watermark (${current}/${total})`;
 }
 
 async function displayIntegratedResults(result) {
@@ -555,4 +828,227 @@ function showAlert(message, type = 'info') {
 function clearAlert() {
   const alertElement = document.getElementById('embedAlert');
   alertElement.style.display = 'none';
+}
+
+// Network error handling with detailed troubleshooting
+function showDetailedNetworkError() {
+  const alertElement = document.getElementById('embedAlert');
+  alertElement.className = 'alert alert-error';
+
+  const networkTips = [
+    'Periksa koneksi internet Anda',
+    'Coba refresh halaman dan ulangi proses',
+    'Pastikan file dokumen tidak terlalu besar (max 50MB)',
+    'Gunakan browser yang mendukung (Chrome, Firefox, Edge)',
+    'Nonaktifkan ad-blocker atau firewall yang mungkin memblokir',
+    'Coba lagi dalam beberapa menit'
+  ];
+
+  let errorHTML = `
+    <div class="error-header">
+      <i class="fas fa-wifi"></i>
+      <strong>Error Koneksi Jaringan</strong>
+    </div>
+    <div class="error-content">
+      <p>Proses embedding gagal karena masalah koneksi. Silakan coba langkah-langkah berikut:</p>
+      <div class="error-recommendations">
+        <ul>
+  `;
+
+  networkTips.forEach(tip => {
+    errorHTML += `<li><i class="fas fa-arrow-right"></i> ${tip}</li>`;
+  });
+
+  errorHTML += `
+        </ul>
+      </div>
+    </div>
+  `;
+
+  alertElement.innerHTML = errorHTML;
+  alertElement.style.display = 'block';
+
+  // Auto-hide after 10 seconds
+  setTimeout(() => {
+    alertElement.style.display = 'none';
+  }, 10000);
+}
+
+// Check network connectivity
+function checkNetworkConnection() {
+  return navigator.onLine;
+}
+
+// Monitor network status
+function initNetworkMonitoring() {
+  window.addEventListener('online', function () {
+    console.log('Network connection restored');
+    showAlert('Koneksi internet pulih. Anda dapat melanjutkan proses.', 'success');
+  });
+
+  window.addEventListener('offline', function () {
+    console.log('Network connection lost');
+    showAlert('Koneksi internet terputus. Periksa koneksi Anda.', 'warning');
+  });
+}
+
+// Initialize Results Tabs
+function initializeResultsTabs() {
+  const tabButtons = document.querySelectorAll('.results-tab-btn');
+  const tabPanes = document.querySelectorAll('.results-tab-pane');
+
+  if (!tabButtons.length || !tabPanes.length) return;
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const targetTab = button.getAttribute('data-tab');
+
+      // Remove active class from all buttons and panes
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabPanes.forEach(pane => pane.classList.remove('active'));
+
+      // Add active class to clicked button and corresponding pane
+      button.classList.add('active');
+      const targetPane = document.getElementById(`tab-${targetTab}`);
+      if (targetPane) {
+        targetPane.classList.add('active');
+      }
+
+      // Update grid navigation if images tab is activated
+      if (targetTab === 'images') {
+        setTimeout(() => {
+          updateGridNavigation();
+        }, 100);
+      }
+    });
+  });
+}
+
+// Initialize Accordion
+function initializeAccordion() {
+  const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+  accordionHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+      const targetId = header.getAttribute('data-target');
+      const content = document.getElementById(targetId);
+      const isActive = header.classList.contains('active');
+
+      // Close all accordion items
+      accordionHeaders.forEach(h => {
+        h.classList.remove('active');
+        const c = document.getElementById(h.getAttribute('data-target'));
+        if (c) c.classList.remove('active');
+      });
+
+      // If item wasn't active, open it
+      if (!isActive) {
+        header.classList.add('active');
+        if (content) content.classList.add('active');
+      }
+    });
+  });
+}
+
+// Update Grid Navigation (helper function)
+function updateGridNavigation() {
+  const gridContainer = document.getElementById('processedImagesGrid');
+  const leftBtn = document.getElementById('gridNavLeft');
+  const rightBtn = document.getElementById('gridNavRight');
+
+  if (!gridContainer || !leftBtn || !rightBtn) return;
+
+  const scrollLeft = gridContainer.scrollLeft;
+  const scrollWidth = gridContainer.scrollWidth;
+  const clientWidth = gridContainer.clientWidth;
+
+  leftBtn.disabled = scrollLeft <= 0;
+  rightBtn.disabled = scrollLeft >= scrollWidth - clientWidth - 10;
+}
+
+// Update results display functions
+function updateResultsDisplay(result) {
+  const resultsPanel = document.getElementById('resultsPanel');
+  if (resultsPanel) {
+    resultsPanel.style.display = 'block';
+  }
+
+  // Update overview tab with download links
+  updateOverviewTab(result);
+
+  // Update image stats
+  updateImageStats(result);
+
+  // Show default overview tab
+  const overviewTab = document.querySelector('[data-tab="overview"]');
+  if (overviewTab) {
+    overviewTab.click();
+  }
+}
+
+function updateOverviewTab(result) {
+  // Update download links
+  const downloadContainer = document.getElementById('embedDownload');
+  if (downloadContainer && result.download_url) {
+    downloadContainer.innerHTML = `
+      <div class="download-item">
+        <a href="${result.download_url}" target="_blank" class="download-link">
+          <i class="fas fa-download"></i>
+          <span>Unduh Dokumen Watermark</span>
+          <small>PDF dengan watermark QR tersembunyi</small>
+        </a>
+      </div>
+    `;
+  }
+
+  // Update QR info
+  const qrInfoContainer = document.getElementById('qrResultInfo');
+  if (qrInfoContainer && result.qr_info) {
+    qrInfoContainer.innerHTML = `
+      <div class="qr-info-grid">
+        <div class="qr-info-item">
+          <span class="qr-info-label">Data:</span>
+          <span class="qr-info-value">${result.qr_info.data || 'N/A'}</span>
+        </div>
+        <div class="qr-info-item">
+          <span class="qr-info-label">Level Koreksi:</span>
+          <span class="qr-info-value">${result.qr_info.error_correction || 'M'}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update security info if available
+  const securityCard = document.getElementById('securityCard');
+  const securityInfoContainer = document.getElementById('securityResultInfo');
+  if (result.security_enabled && securityCard && securityInfoContainer) {
+    securityCard.style.display = 'flex';
+    securityInfoContainer.innerHTML = `
+      <div class="security-summary">
+        <div class="security-level-badge">
+          <i class="fas fa-shield-check"></i>
+          <span>Level ${result.security_level || 'Standard'}</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function updateImageStats(result) {
+  const totalCount = document.getElementById('totalImagesCount');
+  const processedCount = document.getElementById('processedImagesCount');
+  const statsContainer = document.getElementById('embedImageStats');
+
+  // Determine total images from result.total_images if available
+  const total = typeof result.total_images === 'number'
+    ? result.total_images
+    : (result.processed_images ? result.processed_images.length : 0);
+
+  if (totalCount) totalCount.textContent = total;
+  const processed = result.processed_images ? result.processed_images.length : 0;
+  if (processedCount) processedCount.textContent = processed;
+
+  if (statsContainer && (total > 0 || processed > 0)) {
+    statsContainer.style.display = 'flex';
+  }
 }

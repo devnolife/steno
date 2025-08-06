@@ -60,9 +60,8 @@ request_counts = defaultdict(list)
 RATE_LIMIT_WINDOW = 60  # 1 minute
 RATE_LIMIT_MAX_REQUESTS = 50  # Max 50 requests per minute per IP
 
-# Progress tracking for embed operations
-embed_progress = {}
-progress_lock = threading.Lock()
+# In-memory store for embedding progress
+progress_store = {}
 
 
 def rate_limit(max_requests=50, window=60):
@@ -1143,19 +1142,21 @@ def embed_document_route():
                 process_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, stego_doc_output_path)
             else:  # is_pdf
                 process_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, stego_doc_output_path)
-            
+
             # Get processed images info if available
             processed_images = []
             qr_image_url = ""
             public_dir = ""
             qr_info = None
-            
+            total_images = 0
+
             if isinstance(process_result, dict) and process_result.get("success"):
                 processed_images = process_result.get("processed_images", [])
                 qr_image_url = process_result.get("qr_image", "")
                 public_dir = process_result.get("public_dir", "")
                 qr_info = process_result.get("qr_info", None)
-                print(f"[*] Mendapatkan {len(processed_images)} gambar yang diproses")
+                total_images = process_result.get("total_images", len(processed_images))
+                print(f"[*] Mendapatkan {len(processed_images)} gambar yang diproses dari {total_images} gambar")
             else:
                 print("[!] Tidak mendapatkan detail gambar yang diproses")
         except ValueError as ve:
@@ -1178,6 +1179,7 @@ def embed_document_route():
             qr_image_url = ""
             public_dir = ""
             qr_info = None
+            total_images = 0
         
         # Hitung MSE dan PSNR (only for DOCX, PDF comparison is more complex)
         if is_docx:
@@ -1221,6 +1223,7 @@ def embed_document_route():
             "mse": metrics["mse"],
             "psnr": metrics["psnr"],
             "processed_images": processed_images,
+            "total_images": total_images,
             "qr_image": qr_image_url,
             "public_dir": public_dir,
             "qr_info": qr_info,
@@ -1457,6 +1460,44 @@ def generate_qr_preview():
         }), 500
 
 
+@app.route('/analyze_document', methods=['POST'])
+def analyze_document():
+    """Return the number of images in a document."""
+    if 'documentFile' not in request.files:
+        return jsonify({"success": False, "message": "Document file is required"}), 400
+
+    doc_file = request.files['documentFile']
+    if doc_file.filename == '':
+        return jsonify({"success": False, "message": "Document filename cannot be empty"}), 400
+
+    is_docx = allowed_file(doc_file.filename, ALLOWED_DOCX_EXTENSIONS)
+    is_pdf = allowed_file(doc_file.filename, ALLOWED_PDF_EXTENSIONS)
+    if not (is_docx or is_pdf):
+        return jsonify({"success": False, "message": "Document must be .docx or .pdf format"}), 400
+
+    file_extension = '.docx' if is_docx else '.pdf'
+    temp_filename = f"analyze_{uuid.uuid4().hex}{file_extension}"
+    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+    doc_file.save(temp_path)
+
+    temp_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"analyze_{uuid.uuid4().hex}")
+    os.makedirs(temp_dir, exist_ok=True)
+
+    try:
+        if is_docx:
+            images = extract_images_from_docx(temp_path, temp_dir)
+        else:
+            images = extract_images_from_pdf(temp_path, temp_dir)
+        count = len(images)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return jsonify({"success": True, "image_count": count})
+
+
 @app.route('/embed_document_secure', methods=['POST'])
 def embed_document_secure():
     """
@@ -1492,233 +1533,13 @@ def embed_document_secure():
         enable_security = request.form.get('enableSecurity', 'false').lower() == 'true'
         expiry_hours = int(request.form.get('expiryHours', '24'))
         
-        # Generate unique identifiers
-        process_id = uuid.uuid4().hex
+        # Generate or accept process identifier for progress tracking
+        process_id = request.form.get('processId') or uuid.uuid4().hex
         file_extension = '.docx' if is_docx else '.pdf'
-        
+
         # Initialize progress tracking
-        update_progress(process_id, 5, "Initializing process...", "starting")
-        
-        # Cleanup old progress entries
-        cleanup_old_progress()
-        
-        # Start the embedding process in a separate thread
-        def process_embedding():
-            try:
-                # Create progress tracker
-                progress_tracker = SimpleEmbedProgress(process_id, update_progress)
-                
-                progress_tracker.update_progress(10, "Saving uploaded document...")
-                
-                # Save document temporarily
-                doc_filename = f"doc_secure_{process_id}{file_extension}"
-                doc_temp_path = os.path.join(app.config['UPLOAD_FOLDER'], doc_filename)
-                doc_file.save(doc_temp_path)
-                
-                # Prepare QR code path
-                qr_temp_path = None
-                qr_generated = False
-                
-                progress_tracker.update_progress(15, "Processing QR code...")
-                
-                if qr_data:
-                    # Generate QR from data
-                    qr_filename = f"qr_secure_{process_id}.png"
-                    qr_temp_path = os.path.join(app.config['UPLOAD_FOLDER'], qr_filename)
-                    
-                    if enable_security:
-                        progress_tracker.update_progress(20, "Generating secure QR with document binding...")
-                        from secure_qr_utils import SecureQRGenerator
-                        generator = SecureQRGenerator()
-                        
-                        result = generator.generate_bound_qr(
-                            data=qr_data,
-                            document_path=doc_temp_path,
-                            output_path=qr_temp_path,
-                            expiry_hours=expiry_hours
-                        )
-                        
-                        if not result.get('success', False):
-                            progress_tracker.update_progress(0, f"QR generation failed: {result.get('error')}")
-                            update_progress(process_id, 0, f"QR generation failed: {result.get('error')}", "error", True)
-                            return
-                            
-                        qr_generated = True
-                        security_info = {
-                            "binding_id": result.get('binding_id'),
-                            "expiry_time": result.get('expiry_time'),
-                            "security_level": "high"
-                        }
-                    else:
-                        progress_tracker.update_progress(20, "Generating standard QR code...")
-                        from qr_utils import generate_qr_with_analysis
-                        result = generate_qr_with_analysis(qr_data, qr_temp_path)
-                        
-                        if not result.get('success', False):
-                            progress_tracker.update_progress(0, f"QR generation failed: {result.get('error')}")
-                            update_progress(process_id, 0, f"QR generation failed: {result.get('error')}", "error", True)
-                            return
-                            
-                        qr_generated = True
-                        security_info = {"security_level": "none"}
-                
-                else:
-                    # Use uploaded QR file
-                    progress_tracker.update_progress(20, "Processing uploaded QR file...")
-                    if not allowed_file(qr_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                        progress_tracker.update_progress(0, "QR file must be .png format")
-                        update_progress(process_id, 0, "QR file must be .png format", "error", True)
-                        if os.path.exists(doc_temp_path):
-                            os.remove(doc_temp_path)
-                        return
-                    
-                    qr_filename = f"qr_upload_{process_id}.png"
-                    qr_temp_path = os.path.join(app.config['UPLOAD_FOLDER'], qr_filename)
-                    qr_file.save(qr_temp_path)
-                    
-                    if enable_security:
-                        progress_tracker.update_progress(25, "Validating QR security binding...")
-                        from secure_qr_utils import validate_secure_qr
-                        validation_result = validate_secure_qr(qr_temp_path, doc_temp_path)
-                        
-                        if not validation_result.get('valid', False):
-                            progress_tracker.update_progress(0, "Security validation failed")
-                            update_progress(process_id, 0, "Security validation failed: QR code is not bound to this document", "error", True)
-                            # Clean up files
-                            if os.path.exists(doc_temp_path):
-                                os.remove(doc_temp_path)
-                            if os.path.exists(qr_temp_path):
-                                os.remove(qr_temp_path)
-                            return
-                        
-                        security_info = {
-                            "validation_result": validation_result,
-                            "security_level": "validated"
-                        }
-                    else:
-                        security_info = {"security_level": "none"}
-                
-                # Perform document embedding with progress tracking
-                progress_tracker.update_progress(30, "Starting document watermarking process...")
-                
-                output_filename = f"embedded_secure_{process_id}{file_extension}"
-                output_path = os.path.join(app.config['GENERATED_FOLDER'], output_filename)
-                
-                documents_filename = f"watermarked_{process_id}{file_extension}"
-                documents_output_path = os.path.join(app.config['DOCUMENTS_FOLDER'], documents_filename)
-                
-                # Execute embedding process with progress tracking
-                embed_result = embed_with_progress(
-                    doc_temp_path, qr_temp_path, output_path,
-                    is_docx=is_docx,
-                    qr_data=qr_data,
-                    security_config={'enable_security': enable_security, 'expiry_hours': expiry_hours},
-                    progress_tracker=progress_tracker
-                )
-                
-                if not embed_result.get('success', False):
-                    progress_tracker.update_progress(0, f"Embedding failed: {embed_result.get('error', 'Unknown error')}")
-                    update_progress(process_id, 0, f"Embedding failed: {embed_result.get('error', 'Unknown error')}", "error", True)
-                    return
-                
-                progress_tracker.update_progress(96, "Finalizing document...")
-                
-                # Copy to documents folder for download
-                if os.path.exists(output_path):
-                    shutil.copy2(output_path, documents_output_path)
-                
-                # Prepare final result
-                result_data = {
-                    "success": True,
-                    "message": "Document watermarking completed successfully!",
-                    "process_id": process_id,
-                    "document": {
-                        "filename": documents_filename,
-                        "download_url": f"/download_documents/{documents_filename}",
-                        "type": file_extension[1:].upper()
-                    },
-                    "qr": {
-                        "filename": os.path.basename(qr_temp_path) if qr_temp_path else None,
-                        "generated": qr_generated
-                    },
-                    "security": security_info,
-                    "processed_images": embed_result.get('processed_images', []),
-                    "quality_metrics": embed_result.get('quality_metrics', {}),
-                    "total_images": embed_result.get('total_images', 0),
-                    "images_processed": embed_result.get('images_processed', 0)
-                }
-                
-                progress_tracker.update_progress(100, "Process completed successfully!")
-                update_progress(process_id, 100, "Process completed successfully!", "completed", True, result_data)
-                
-                # Clean up temporary files
-                cleanup_files = [doc_temp_path]
-                if qr_generated and qr_temp_path and os.path.exists(qr_temp_path):
-                    cleanup_files.append(qr_temp_path)
-                
-                for file_path in cleanup_files:
-                    try:
-                        if os.path.exists(file_path):
-                            os.remove(file_path)
-                    except Exception as e:
-                        logger.warning(f"Failed to clean up {file_path}: {e}")
-                
-            except Exception as e:
-                logger.error(f"Error in embedding process {process_id}: {e}")
-                update_progress(process_id, 0, f"Process failed: {str(e)}", "error", True)
-        
-        # Start the embedding process in a separate thread
-        threading.Thread(target=process_embedding, daemon=True).start()
-        
-        # Return process ID immediately for frontend to track progress
-        return jsonify({
-            "success": True,
-            "message": "Process started successfully",
-            "process_id": process_id,
-            "tracking_enabled": True
-        })
-        
-    except Exception as e:
-        logger.error(f"Error starting embed process: {e}")
-        return jsonify({
-            "success": False,
-            "message": f"Failed to start process: {str(e)}"
-        }), 500
-    """
-    Integrated workflow endpoint for secure document embedding.
-    Handles QR generation, document embedding, and security binding in one workflow.
-    """
-    try:
-        # Validate required fields
-        if 'documentFile' not in request.files:
-            return jsonify({"success": False, "message": "Document file is required"}), 400
-        
-        doc_file = request.files['documentFile']
-        if doc_file.filename == '':
-            return jsonify({"success": False, "message": "Document filename cannot be empty"}), 400
-        
-        # Check if we have QR data or QR file
-        qr_data = request.form.get('qrData', '').strip()
-        qr_file = request.files.get('qrFile')
-        
-        if not qr_data and (not qr_file or qr_file.filename == ''):
-            return jsonify({"success": False, "message": "Either QR data text or QR file is required"}), 400
-        
-        # Validate document format
-        is_docx = allowed_file(doc_file.filename, ALLOWED_DOCX_EXTENSIONS)
-        is_pdf = allowed_file(doc_file.filename, ALLOWED_PDF_EXTENSIONS)
-        
-        if not (is_docx or is_pdf):
-            return jsonify({"success": False, "message": "Document must be .docx or .pdf format"}), 400
-        
-        # Parse security options
-        enable_security = request.form.get('enableSecurity', 'false').lower() == 'true'
-        expiry_hours = int(request.form.get('expiryHours', '24'))
-        
-        # Generate unique identifiers
-        process_id = uuid.uuid4().hex
-        file_extension = '.docx' if is_docx else '.pdf'
-        
+        progress_store[process_id] = {"current": 0, "total": 0, "status": "processing"}
+
         # Save document temporarily
         doc_filename = f"doc_secure_{process_id}{file_extension}"
         doc_temp_path = os.path.join(app.config['UPLOAD_FOLDER'], doc_filename)
@@ -1822,10 +1643,13 @@ def embed_document_secure():
         documents_output_path = os.path.join(app.config['DOCUMENTS_FOLDER'], documents_filename)
         
         # Execute embedding process
+        def progress_callback(current, total):
+            progress_store[process_id] = {"current": current, "total": total, "status": "processing"}
+
         if is_docx:
-            embed_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, output_path)
+            embed_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, output_path, progress_callback=progress_callback)
         else:
-            embed_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, output_path)
+            embed_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, output_path, progress_callback=progress_callback)
         
         # Check embedding result
         if not embed_result.get("success", False):
@@ -1859,6 +1683,10 @@ def embed_document_secure():
         if os.path.exists(output_path):
             shutil.copy(output_path, documents_output_path)
         
+        # Mark progress as completed
+        total_images = len(embed_result.get("processed_images", []))
+        progress_store[process_id] = {"current": total_images, "total": total_images, "status": "completed"}
+
         # Prepare comprehensive response
         response_data = {
             "success": True,
@@ -1876,6 +1704,7 @@ def embed_document_secure():
             },
             "security": security_info,
             "processed_images": embed_result.get("processed_images", []),
+            "total_images": total_images,
             "quality_metrics": {
                 "mse": embed_result.get("mse"),
                 "psnr": embed_result.get("psnr")
@@ -1903,63 +1732,20 @@ def embed_document_secure():
         except:
             pass
         
+        progress_store[process_id] = {"current": 0, "total": 0, "status": "error"}
         return jsonify({
             "success": False,
             "message": f"Internal server error: {str(e)}"
         }), 500
 
 
-@app.route('/get_embed_progress/<process_id>')
-def get_embed_progress(process_id):
-    """Get progress for a specific embed operation"""
-    with progress_lock:
-        progress_data = embed_progress.get(process_id, {
-            "status": "not_found",
-            "progress": 0,
-            "message": "Process not found",
-            "completed": True
-        })
-    return jsonify(progress_data)
-
-
-@app.route('/cancel_embed_process/<process_id>', methods=['POST'])
-def cancel_embed_process(process_id):
-    """Cancel a running embed process"""
-    with progress_lock:
-        if process_id in embed_progress:
-            embed_progress[process_id]["status"] = "cancelled"
-            embed_progress[process_id]["message"] = "Process cancelled by user"
-            embed_progress[process_id]["completed"] = True
-            return jsonify({"success": True, "message": "Process cancelled"})
-        else:
-            return jsonify({"success": False, "message": "Process not found"}), 404
-
-
-def update_progress(process_id, progress, message, status="processing", completed=False, result_data=None):
-    """Update progress for an embed operation"""
-    with progress_lock:
-        embed_progress[process_id] = {
-            "status": status,
-            "progress": min(100, max(0, progress)),
-            "message": message,
-            "completed": completed,
-            "timestamp": time.time()
-        }
-        if result_data:
-            embed_progress[process_id]["result"] = result_data
-
-
-def cleanup_old_progress():
-    """Clean up old progress entries (older than 1 hour)"""
-    current_time = time.time()
-    with progress_lock:
-        to_remove = []
-        for process_id, data in embed_progress.items():
-            if current_time - data.get("timestamp", 0) > 3600:  # 1 hour
-                to_remove.append(process_id)
-        
-        for process_id in to_remove:
-            del embed_progress[process_id]
+@app.route('/progress/<process_id>')
+def get_progress(process_id):
+    """Get current embedding progress."""
+    data = progress_store.get(process_id)
+    if not data:
+        return jsonify({"success": False, "message": "Invalid process ID"}), 404
+    return jsonify({"success": True, **data})
 
 
 @app.route('/process_details')

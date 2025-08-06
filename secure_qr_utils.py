@@ -64,7 +64,14 @@ class SecureQRGenerator:
             
             # Generate document fingerprint
             fingerprint = self.binder.generate_document_fingerprint(document_path)
-            
+
+            # Ensure this document and QR data are not already bound
+            if self.storage.load_binding_record(fingerprint["document_id"]):
+                raise DocumentSecurityError("A QR code has already been generated for this document")
+            existing_qr = self.storage.find_record_by_qr_data(data)
+            if existing_qr and existing_qr.get("document_fingerprint", {}).get("document_id") != fingerprint["document_id"]:
+                raise DocumentSecurityError("This QR data is already bound to another document")
+
             # Generate binding token
             binding_token = self.binder.generate_binding_token(
                 fingerprint, data, expiry_hours
@@ -199,7 +206,14 @@ class SecureQRGenerator:
             
             # Generate document fingerprint
             fingerprint = self.binder.generate_document_fingerprint(document_path)
-            
+
+            # Ensure this document and QR data are not already bound
+            if self.storage.load_binding_record(fingerprint["document_id"]):
+                raise DocumentSecurityError("A QR code has already been generated for this document")
+            existing_qr = self.storage.find_record_by_qr_data(qr_data)
+            if existing_qr and existing_qr.get("document_fingerprint", {}).get("document_id") != fingerprint["document_id"]:
+                raise DocumentSecurityError("This QR data is already bound to another document")
+
             # Generate binding token
             binding_token = self.binder.generate_binding_token(
                 fingerprint, qr_data, expiry_hours
