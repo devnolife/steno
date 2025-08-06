@@ -114,8 +114,10 @@ class DocumentBinder:
             # Document-specific metadata
             doc_metadata = self._extract_document_metadata(document_path, file_ext)
             
-            # Create fingerprint structure with UUID-based document ID
-            document_id = str(uuid.uuid4())  # Generate unique UUID for document
+            # Create fingerprint structure with deterministic UUID based on content hash
+            # This ensures the same document always gets the same identifier
+            document_uuid = uuid.uuid5(uuid.NAMESPACE_URL, file_hash)
+            document_id = str(document_uuid)
             
             fingerprint = {
                 "version": QR_BINDING_VERSION,
@@ -469,6 +471,22 @@ class BindingStorage:
             return None
         except Exception as e:
             logger.error(f"Error loading binding record: {e}")
+            return None
+
+    def find_record_by_qr_data(self, qr_data: str) -> Optional[Dict[str, Any]]:
+        """Search for an existing binding record containing the given QR data"""
+        try:
+            for record_file in self.storage_dir.glob("*.json"):
+                try:
+                    with open(record_file, 'r') as f:
+                        record = json.load(f)
+                    if record.get("qr_data") == qr_data:
+                        return record
+                except Exception:
+                    continue
+            return None
+        except Exception as e:
+            logger.error(f"Error searching binding records: {e}")
             return None
     
     def cleanup_expired_records(self) -> int:

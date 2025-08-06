@@ -1,4 +1,6 @@
 // Secure Document Embedding - Integrated Workflow Handler
+let progressInterval = null;
+
 document.addEventListener('DOMContentLoaded', function () {
   // Initialize network monitoring
   initNetworkMonitoring();
@@ -87,36 +89,25 @@ function formatFileSize(bytes) {
 }
 
 async function analyzeDocumentForImages(file) {
-  // Show checking status
   showStatusIndicator('checking');
 
   try {
-    // Create a FormData to send the file for analysis
     const formData = new FormData();
     formData.append('documentFile', file);
 
-    // This is a mock analysis - in a real implementation, you might want to
-    // create a separate endpoint for document analysis
-    // For now, we'll simulate the analysis based on file type and name
+    const response = await fetch('/analyze_document', {
+      method: 'POST',
+      body: formData
+    });
 
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock analysis logic
-    const fileName = file.name.toLowerCase();
-    const hasLikelyImages = fileName.includes('image') ||
-      fileName.includes('gambar') ||
-      fileName.includes('foto') ||
-      fileName.includes('picture') ||
-      file.size > 500000; // Assume larger files might have images
-
-    if (hasLikelyImages) {
-      const mockImageCount = Math.floor(Math.random() * 5) + 1;
-      showStatusIndicator('has-images', mockImageCount);
-    } else {
+    const result = await response.json();
+    if (result.success && result.image_count > 0) {
+      showStatusIndicator('has-images', result.image_count);
+    } else if (result.success) {
       showStatusIndicator('no-images');
+    } else {
+      showStatusIndicator('error', 0, result.message || 'Analysis failed');
     }
-
   } catch (error) {
     console.error('Error analyzing document:', error);
     showStatusIndicator('error', 0, error.message);
@@ -238,6 +229,8 @@ function initQRPreview() {
   const charCount = document.getElementById('charCount');
   const capacityAnalysis = document.getElementById('capacityAnalysis');
 
+  if (!qrDataInput || !charCount || !capacityAnalysis) return;
+
   let previewTimeout;
 
   qrDataInput.addEventListener('input', function () {
@@ -351,6 +344,8 @@ function initSecurityOptions() {
   const securitySubtitle = document.getElementById('securitySubtitle');
   const securityIcon = document.getElementById('securityIcon');
 
+  if (!securityToggle || !securityConfig || !securityTitle || !securitySubtitle || !securityIcon) return;
+
   securityToggle.addEventListener('change', function () {
     if (this.checked) {
       securityConfig.style.display = 'block';
@@ -399,12 +394,14 @@ async function makeEmbedRequest(formData) {
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
-
-    response = await fetch('/embed_document_secure', {
+    const fetchPromise = fetch('/embed_document_secure', {
       method: 'POST',
       body: formData,
       signal: controller.signal
     });
+
+    updateProgressStep(3, 'Processing document...');
+    response = await fetchPromise;
 
     clearTimeout(timeoutId);
 
@@ -437,9 +434,6 @@ async function makeEmbedRequest(formData) {
       throw fetchError; // Re-throw other errors
     }
   }
-
-  // Update progress to step 3
-  updateProgressStep(3, 'Processing document...');
 
   let result;
   try {
@@ -476,6 +470,8 @@ async function handleIntegratedEmbedding(form) {
 
     // Prepare form data
     const formData = new FormData(form);
+    const processId = self.crypto?.randomUUID ? self.crypto.randomUUID() : Date.now().toString();
+    formData.append('processId', processId);
 
     // Set progress to step 1
     updateProgressStep(1, 'Preparing request...');
@@ -497,6 +493,9 @@ async function handleIntegratedEmbedding(form) {
 
     // Update progress to step 2
     updateProgressStep(2, 'Generating QR code...');
+
+    // Start polling for progress
+    startProgressPolling(processId);
 
     // Make request to integrated endpoint with retry mechanism
     const maxRetries = 2;
@@ -578,6 +577,7 @@ async function handleIntegratedEmbedding(form) {
     // Reset button
     submitBtn.innerHTML = originalText;
     submitBtn.disabled = false;
+    stopProgressPolling();
   }
 }
 
@@ -644,6 +644,42 @@ function updateProgressStep(stepNumber, message) {
   const progressFill = document.querySelector('.progress-fill');
   const percentage = (stepNumber / 4) * 100;
   progressFill.style.width = `${percentage}%`;
+}
+
+function startProgressPolling(processId) {
+  const progressFill = document.querySelector('.progress-fill');
+  progressFill.style.width = '0%';
+
+  progressInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/progress/${processId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && data.total > 0) {
+        updateEmbedProgress(data.current, data.total);
+        if (data.status === 'completed' || data.current >= data.total) {
+          stopProgressPolling();
+        }
+      }
+    } catch (err) {
+      console.error('Progress polling error:', err);
+    }
+  }, 1000);
+}
+
+function stopProgressPolling() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
+}
+
+function updateEmbedProgress(current, total) {
+  const progressFill = document.querySelector('.progress-fill');
+  const percentage = Math.round((current / total) * 100);
+  progressFill.style.width = `${percentage}%`;
+  const progressText = document.getElementById('progressText');
+  progressText.textContent = `Menyematkan watermark (${current}/${total})`;
 }
 
 async function displayIntegratedResults(result) {
@@ -1305,11 +1341,18 @@ function updateOverviewTab(result) {
 function updateImageStats(result) {
   const totalCount = document.getElementById('totalImagesCount');
   const processedCount = document.getElementById('processedImagesCount');
+  const statsContainer = document.getElementById('embedImageStats');
 
-  if (result.processed_images) {
-    const total = result.processed_images.length;
+  // Determine total images from result.total_images if available
+  const total = typeof result.total_images === 'number'
+    ? result.total_images
+    : (result.processed_images ? result.processed_images.length : 0);
 
-    if (totalCount) totalCount.textContent = total;
-    if (processedCount) processedCount.textContent = total;
+  if (totalCount) totalCount.textContent = total;
+  const processed = result.processed_images ? result.processed_images.length : 0;
+  if (processedCount) processedCount.textContent = processed;
+
+  if (statsContainer && (total > 0 || processed > 0)) {
+    statsContainer.style.display = 'flex';
   }
 }

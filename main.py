@@ -373,8 +373,9 @@ def replace_images_in_pdf(pdf_path: str, original_images: List[str],
         return False
 
 
-def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: str = None, 
-                          qr_data: str = None, security_config: dict = None) -> dict:
+def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: str = None,
+                          qr_data: str = None, security_config: dict = None,
+                          progress_callback=None) -> dict:
     """
     Process a docx document to add QR watermarks to all images.
 
@@ -451,6 +452,9 @@ def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: st
         print(f"[*] Mengekstrak gambar dari dokumen: {docx_path}")
         extracted_images = extract_images_from_docx(docx_path, temp_dir)
 
+        if progress_callback:
+            progress_callback(0, len(extracted_images))
+
         if not extracted_images:
             print("[!] Dokumen ini tidak mengandung gambar")
             # Clean up temporary directory
@@ -499,6 +503,9 @@ def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: st
                     "original": f"{public_dir_name}/{original_public_name}",
                     "watermarked": f"{public_dir_name}/{watermarked_public_name}"
                 })
+
+                if progress_callback:
+                    progress_callback(i + 1, len(extracted_images))
                 
             except Exception as e:
                 print(f"[!] Gagal watermark gambar {img_path}: {str(e)}")
@@ -543,8 +550,9 @@ def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: st
 
         # Return success status and image info
         result = {
-            "success": success, 
+            "success": success,
             "processed_images": processed_images,
+            "total_images": len(extracted_images),
             "qr_image": f"{public_dir_name}/{qr_public_name}",
             "public_dir": public_dir_name,
             "qr_info": qr_info,
@@ -576,7 +584,8 @@ def embed_watermark_to_docx(docx_path: str, qr_path: str = None, output_path: st
 
 
 def embed_watermark_to_pdf(pdf_path: str, qr_path: str = None, output_path: str = None,
-                         qr_data: str = None, security_config: dict = None) -> dict:
+                         qr_data: str = None, security_config: dict = None,
+                         progress_callback=None) -> dict:
     """
     Process a PDF document to add QR watermarks to all images.
 
@@ -652,6 +661,9 @@ def embed_watermark_to_pdf(pdf_path: str, qr_path: str = None, output_path: str 
         print(f"[*] Mengekstrak gambar dari PDF: {pdf_path}")
         extracted_images = extract_images_from_pdf(pdf_path, temp_dir)
 
+        if progress_callback:
+            progress_callback(0, len(extracted_images))
+
         if not extracted_images:
             print("[!] PDF ini tidak mengandung gambar")
             # Clean up temporary directory
@@ -695,6 +707,9 @@ def embed_watermark_to_pdf(pdf_path: str, qr_path: str = None, output_path: str 
                     "original": f"{public_dir_name}/{original_public_name}",
                     "watermarked": f"{public_dir_name}/{watermarked_public_name}"
                 })
+
+                if progress_callback:
+                    progress_callback(i + 1, len(extracted_images))
                 
             except Exception as e:
                 print(f"[!] Gagal watermark gambar {img_path}: {str(e)}")
@@ -739,8 +754,9 @@ def embed_watermark_to_pdf(pdf_path: str, qr_path: str = None, output_path: str 
 
         # Return success status and image info
         result = {
-            "success": success, 
+            "success": success,
             "processed_images": processed_images,
+            "total_images": len(extracted_images),
             "qr_image": f"{public_dir_name}/{qr_public_name}",
             "public_dir": public_dir_name,
             "qr_info": qr_info,

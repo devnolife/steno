@@ -58,6 +58,9 @@ request_counts = defaultdict(list)
 RATE_LIMIT_WINDOW = 60  # 1 minute
 RATE_LIMIT_MAX_REQUESTS = 50  # Max 50 requests per minute per IP
 
+# In-memory store for embedding progress
+progress_store = {}
+
 
 def rate_limit(max_requests=50, window=60):
     """Rate limiting decorator"""
@@ -1137,19 +1140,21 @@ def embed_document_route():
                 process_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, stego_doc_output_path)
             else:  # is_pdf
                 process_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, stego_doc_output_path)
-            
+
             # Get processed images info if available
             processed_images = []
             qr_image_url = ""
             public_dir = ""
             qr_info = None
-            
+            total_images = 0
+
             if isinstance(process_result, dict) and process_result.get("success"):
                 processed_images = process_result.get("processed_images", [])
                 qr_image_url = process_result.get("qr_image", "")
                 public_dir = process_result.get("public_dir", "")
                 qr_info = process_result.get("qr_info", None)
-                print(f"[*] Mendapatkan {len(processed_images)} gambar yang diproses")
+                total_images = process_result.get("total_images", len(processed_images))
+                print(f"[*] Mendapatkan {len(processed_images)} gambar yang diproses dari {total_images} gambar")
             else:
                 print("[!] Tidak mendapatkan detail gambar yang diproses")
         except ValueError as ve:
@@ -1172,6 +1177,7 @@ def embed_document_route():
             qr_image_url = ""
             public_dir = ""
             qr_info = None
+            total_images = 0
         
         # Hitung MSE dan PSNR (only for DOCX, PDF comparison is more complex)
         if is_docx:
@@ -1215,6 +1221,7 @@ def embed_document_route():
             "mse": metrics["mse"],
             "psnr": metrics["psnr"],
             "processed_images": processed_images,
+            "total_images": total_images,
             "qr_image": qr_image_url,
             "public_dir": public_dir,
             "qr_info": qr_info,
@@ -1451,6 +1458,44 @@ def generate_qr_preview():
         }), 500
 
 
+@app.route('/analyze_document', methods=['POST'])
+def analyze_document():
+    """Return the number of images in a document."""
+    if 'documentFile' not in request.files:
+        return jsonify({"success": False, "message": "Document file is required"}), 400
+
+    doc_file = request.files['documentFile']
+    if doc_file.filename == '':
+        return jsonify({"success": False, "message": "Document filename cannot be empty"}), 400
+
+    is_docx = allowed_file(doc_file.filename, ALLOWED_DOCX_EXTENSIONS)
+    is_pdf = allowed_file(doc_file.filename, ALLOWED_PDF_EXTENSIONS)
+    if not (is_docx or is_pdf):
+        return jsonify({"success": False, "message": "Document must be .docx or .pdf format"}), 400
+
+    file_extension = '.docx' if is_docx else '.pdf'
+    temp_filename = f"analyze_{uuid.uuid4().hex}{file_extension}"
+    temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+    doc_file.save(temp_path)
+
+    temp_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"analyze_{uuid.uuid4().hex}")
+    os.makedirs(temp_dir, exist_ok=True)
+
+    try:
+        if is_docx:
+            images = extract_images_from_docx(temp_path, temp_dir)
+        else:
+            images = extract_images_from_pdf(temp_path, temp_dir)
+        count = len(images)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return jsonify({"success": True, "image_count": count})
+
+
 @app.route('/embed_document_secure', methods=['POST'])
 def embed_document_secure():
     """
@@ -1484,10 +1529,13 @@ def embed_document_secure():
         enable_security = request.form.get('enableSecurity', 'false').lower() == 'true'
         expiry_hours = int(request.form.get('expiryHours', '24'))
         
-        # Generate unique identifiers
-        process_id = uuid.uuid4().hex
+        # Generate or accept process identifier for progress tracking
+        process_id = request.form.get('processId') or uuid.uuid4().hex
         file_extension = '.docx' if is_docx else '.pdf'
-        
+
+        # Initialize progress tracking
+        progress_store[process_id] = {"current": 0, "total": 0, "status": "processing"}
+
         # Save document temporarily
         doc_filename = f"doc_secure_{process_id}{file_extension}"
         doc_temp_path = os.path.join(app.config['UPLOAD_FOLDER'], doc_filename)
@@ -1591,10 +1639,13 @@ def embed_document_secure():
         documents_output_path = os.path.join(app.config['DOCUMENTS_FOLDER'], documents_filename)
         
         # Execute embedding process
+        def progress_callback(current, total):
+            progress_store[process_id] = {"current": current, "total": total, "status": "processing"}
+
         if is_docx:
-            embed_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, output_path)
+            embed_result = embed_watermark_to_docx(doc_temp_path, qr_temp_path, output_path, progress_callback=progress_callback)
         else:
-            embed_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, output_path)
+            embed_result = embed_watermark_to_pdf(doc_temp_path, qr_temp_path, output_path, progress_callback=progress_callback)
         
         # Check embedding result
         if not embed_result.get("success", False):
@@ -1628,6 +1679,10 @@ def embed_document_secure():
         if os.path.exists(output_path):
             shutil.copy(output_path, documents_output_path)
         
+        # Mark progress as completed
+        total_images = len(embed_result.get("processed_images", []))
+        progress_store[process_id] = {"current": total_images, "total": total_images, "status": "completed"}
+
         # Prepare comprehensive response
         response_data = {
             "success": True,
@@ -1645,6 +1700,7 @@ def embed_document_secure():
             },
             "security": security_info,
             "processed_images": embed_result.get("processed_images", []),
+            "total_images": total_images,
             "quality_metrics": {
                 "mse": embed_result.get("mse"),
                 "psnr": embed_result.get("psnr")
@@ -1672,10 +1728,20 @@ def embed_document_secure():
         except:
             pass
         
+        progress_store[process_id] = {"current": 0, "total": 0, "status": "error"}
         return jsonify({
             "success": False,
             "message": f"Internal server error: {str(e)}"
         }), 500
+
+
+@app.route('/progress/<process_id>')
+def get_progress(process_id):
+    """Get current embedding progress."""
+    data = progress_store.get(process_id)
+    if not data:
+        return jsonify({"success": False, "message": "Invalid process ID"}), 404
+    return jsonify({"success": True, **data})
 
 
 @app.route('/process_details')
