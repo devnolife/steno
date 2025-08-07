@@ -1,156 +1,361 @@
 {% extends "base.html" %}
 
-{% block title %}Hasil Penyematan - Watermarking Bahan Ajar Digital{% endblock %}
+{% block title %}Hasil Steganografi - Watermarking Digital{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-3">
+<div class="result-page-container">
     <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="result-header">
-                <div class="header-content">
-                    <h1 class="result-title">
-                        <i class="fas fa-check-circle text-success"></i>
-                        Penyematan Selesai
-                    </h1>
-                    <p class="result-subtitle">Dokumen dengan watermark QR telah berhasil diproses</p>
+    <div class="result-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="header-content">
+                <h1 class="result-title">Steganografi Berhasil</h1>
+                <p class="result-subtitle">Dokumen telah berhasil diproses dengan teknik LSB steganografi</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn btn-new-process" onclick="window.location.href='/embed'">
+                <i class="fas fa-plus"></i>
+                <span>Proses Baru</span>
+            </button>
+            <button type="button" class="btn btn-export" onclick="exportResults()">
+                <i class="fas fa-download"></i>
+                <span>Export Hasil</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="result-content">
+        <!-- Statistics Overview -->
+        <div class="statistics-overview">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 class="stat-number" id="totalImages">0</h3>
+                        <p class="stat-label">Total Gambar</p>
+                    </div>
                 </div>
-                <div class="header-actions">
-                    <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/embed'">
-                        <i class="fas fa-plus"></i>
-                        Proses Dokumen Baru
-                    </button>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 class="stat-number" id="processedImages">0</h3>
+                        <p class="stat-label">Berhasil Diproses</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 class="stat-number" id="qrEmbedded">0</h3>
+                        <p class="stat-label">QR Tersematkan</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 class="stat-number" id="averageQuality">0%</h3>
+                        <p class="stat-label">Rata-rata Kualitas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Results Area -->
+        <div class="results-main">
+            <!-- Left Panel: Steganography Results -->
+            <div class="results-panel">
+                <div class="panel-header">
+                    <h2>
+                        <i class="fas fa-eye-slash"></i>
+                        Hasil Steganografi LSB
+                    </h2>
+                    <div class="panel-controls">
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-view="gallery">
+                                <i class="fas fa-th"></i>
+                                Gallery
+                            </button>
+                            <button class="toggle-btn" data-view="comparison">
+                                <i class="fas fa-columns"></i>
+                                Perbandingan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <!-- Gallery View -->
+                    <div class="view-content active" id="galleryView">
+                        <div class="image-gallery" id="imageGallery">
+                            <div class="gallery-empty" id="galleryEmpty">
+                                <div class="empty-icon">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <h3>Belum Ada Hasil</h3>
+                                <p>Gambar hasil steganografi akan muncul di sini setelah proses selesai</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison View -->
+                    <div class="view-content" id="comparisonView">
+                        <div class="comparison-container" id="comparisonContainer">
+                            <div class="comparison-empty">
+                                <div class="empty-icon">
+                                    <i class="fas fa-balance-scale"></i>
+                                </div>
+                                <h3>Mode Perbandingan</h3>
+                                <p>Pilih gambar dari gallery untuk melihat perbandingan</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Analysis & Downloads -->
+            <div class="analysis-panel">
+                <!-- QR Code Information -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-qrcode"></i>
+                            QR Code yang Disematkan
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="qr-display" id="qrDisplay">
+                            <div class="qr-preview">
+                                <div class="qr-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>QR Code</span>
+                                </div>
+                            </div>
+                            <div class="qr-info" id="qrInfo">
+                                <div class="info-item">
+                                    <span class="label">Data:</span>
+                                    <span class="value" id="qrData">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Ukuran:</span>
+                                    <span class="value" id="qrSize">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Error Correction:</span>
+                                    <span class="value" id="qrErrorLevel">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Analysis -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-chart-line"></i>
+                            Analisis Kualitas
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="quality-metrics" id="qualityMetrics">
+                            <div class="metric-item">
+                                <div class="metric-label">PSNR</div>
+                                <div class="metric-value">
+                                    <span id="psnrValue">-</span>
+                                    <small>dB</small>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">MSE</div>
+                                <div class="metric-value">
+                                    <span id="mseValue">-</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">SSIM</div>
+                                <div class="metric-value">
+                                    <span id="ssimValue">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="quality-chart" id="qualityChart">
+                            <canvas id="qualityChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Details -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-cogs"></i>
+                            Detail Proses
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="process-info" id="processInfo">
+                            <div class="info-item">
+                                <span class="label">Metode:</span>
+                                <span class="value">LSB Steganografi</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Waktu Proses:</span>
+                                <span class="value" id="processTime">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Kapasitas Digunakan:</span>
+                                <span class="value" id="capacityUsed">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Section -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-download"></i>
+                            Download Hasil
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="download-options" id="downloadOptions">
+                            <button class="download-btn" id="downloadDocument">
+                                <div class="btn-icon">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+                                <div class="btn-content">
+                                    <span class="btn-title">Dokumen Akhir</span>
+                                    <span class="btn-subtitle">DOCX dengan QR tersematkan</span>
+                                </div>
+                            </button>
+                            
+                            <button class="download-btn" id="downloadImages">
+                                <div class="btn-icon">
+                                    <i class="fas fa-images"></i>
+                                </div>
+                                <div class="btn-content">
+                                    <span class="btn-title">Gambar Hasil</span>
+                                    <span class="btn-subtitle">ZIP berisi semua gambar</span>
+                                </div>
+                            </button>
+                            
+                            <button class="download-btn" id="downloadReport">
+                                <div class="btn-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div class="btn-content">
+                                    <span class="btn-title">Laporan Analisis</span>
+                                    <span class="btn-subtitle">PDF berisi detail proses</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Results Content -->
-    <div class="row g-4">
-        <!-- Left Column: Main Results -->
-        <div class="col-xl-8 col-lg-7">
-            <!-- Results Overview Cards -->
-            <div class="results-overview mb-4">
-                <div class="row g-3">
-                    <!-- Download Card -->
-                    <div class="col-md-6">
-                        <div class="overview-card download-card">
-                            <div class="card-icon">
-                                <i class="fas fa-download"></i>
-                            </div>
-                            <div class="card-content">
-                                <h4>Unduh Dokumen</h4>
-                                <p>Dokumen dengan watermark sudah siap</p>
-                                <div class="download-links" id="embedDownload">
-                                    <!-- Download links will be populated by JavaScript -->
-                                </div>
-                            </div>
+<!-- Image Modal for Detailed View -->
+<div class="image-modal" id="imageModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Detail Gambar</h3>
+            <button class="modal-close" onclick="closeImageModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-image-container">
+                <div class="image-comparison">
+                    <div class="comparison-item">
+                        <h4>Gambar Asli</h4>
+                        <div class="image-wrapper">
+                            <img id="modalOriginalImage" alt="Original">
                         </div>
                     </div>
-                    
-                    <!-- QR Info Card -->
-                    <div class="col-md-6">
-                        <div class="overview-card qr-card">
-                            <div class="card-icon">
-                                <i class="fas fa-qrcode"></i>
-                            </div>
-                            <div class="card-content">
-                                <h4>Informasi QR Code</h4>
-                                <div class="qr-result-info" id="qrResultInfo">
-                                    <!-- QR info will be populated by JavaScript -->
-                                </div>
-                            </div>
-                        </div>
+                    <div class="comparison-arrow">
+                        <i class="fas fa-arrow-right"></i>
                     </div>
-                </div>
-                
-                <!-- Security Card (if applicable) -->
-                <div class="row g-3 mt-2">
-                    <div class="col-12">
-                        <div class="overview-card security-card" id="securityCard" style="display: none;">
-                            <div class="card-icon">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                            <div class="card-content">
-                                <h4>Keamanan Dokumen</h4>
-                                <div class="security-result-info" id="securityResultInfo">
-                                    <!-- Security info will be populated by JavaScript -->
-                                </div>
-                            </div>
+                    <div class="comparison-item">
+                        <h4>Hasil Steganografi</h4>
+                        <div class="image-wrapper">
+                            <img id="modalProcessedImage" alt="Processed">
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Results Tabs -->
-            <div class="results-tabs-container">
-                <!-- Tab Navigation -->
-                <div class="results-tab-nav">
-                    <button class="results-tab-btn active" data-tab="images">
-                        <i class="fas fa-images"></i>
-                        <span>Gambar</span>
-                    </button>
-                    <button class="results-tab-btn" data-tab="metrics">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Metrik</span>
-                    </button>
-                    <button class="results-tab-btn" data-tab="details">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Detail</span>
-                    </button>
-                </div>
-                
-                <!-- Tab Contents -->
-                <div class="results-tab-content">
-                    <!-- Images Tab -->
-                    <div class="results-tab-pane active" id="tab-images">
-                        <div class="images-tab-header">
-                            <div class="images-stats">
-                                <div class="stat-item">
-                                    <span class="stat-number" id="totalImagesCount">0</span>
-                                    <span class="stat-label">Total Gambar</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-number" id="processedImagesCount">0</span>
-                                    <span class="stat-label">Berhasil Diproses</span>
-                                </div>
-                            </div>
-                            
-                            <div class="images-controls">
-                                <button type="button" class="view-toggle-btn active" id="gridViewNormal">
-                                    <i class="fas fa-th"></i>
-                                    Normal
-                                </button>
-                                <button type="button" class="view-toggle-btn" id="gridViewCompact">
-                                    <i class="fas fa-th-large"></i>
-                                    Compact
-                                </button>
-                            </div>
+            <div class="modal-details">
+                <div class="details-grid">
+                    <div class="detail-section">
+                        <h5>Informasi File</h5>
+                        <div class="detail-item">
+                            <span class="label">Nama File:</span>
+                            <span class="value" id="modalFileName">-</span>
                         </div>
-                        
-                        <div class="results-grid-wrapper">
-                            <div class="grid-nav-buttons grid-nav-left">
-                                <button type="button" class="grid-nav-btn" id="gridNavLeft" disabled title="Geser ke kiri">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="results-grid" id="processedImagesGrid">
-                                <div class="results-grid-loading" id="gridLoading" style="display: none;">
-                                    <div class="grid-loading-spinner"></div>
-                                    <span>Memproses gambar...</span>
-                                </div>
-                                
-                                <div class="results-grid-empty" id="gridEmpty">
-                                    <i class="fas fa-image"></i>
-                                    <h4>Belum ada gambar yang diproses</h4>
-                                    <p>Gambar akan muncul setelah proses embedding selesai</p>
-                                </div>
-                            </div>
-                            
-                            <div class="grid-nav-buttons grid-nav-right">
-                                <button type="button" class="grid-nav-btn" id="gridNavRight" disabled title="Geser ke kanan">
-                                    <i class="fas fa-chevron-right"></i>
+                        <div class="detail-item">
+                            <span class="label">Resolusi:</span>
+                            <span class="value" id="modalResolution">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Ukuran File:</span>
+                            <span class="value" id="modalFileSize">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h5>Metrik Kualitas</h5>
+                        <div class="detail-item">
+                            <span class="label">PSNR:</span>
+                            <span class="value" id="modalPSNR">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">MSE:</span>
+                            <span class="value" id="modalMSE">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">SSIM:</span>
+                            <span class="value" id="modalSSIM">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h5>Detail Steganografi</h5>
+                        <div class="detail-item">
+                            <span class="label">Bits per Pixel:</span>
+                            <span class="value" id="modalBitsPerPixel">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Kapasitas Digunakan:</span>
+                            <span class="value" id="modalCapacityUsed">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Status Embedding:</span>
+                            <span class="value" id="modalEmbedStatus">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                                 </button>
                             </div>
                         </div>
@@ -235,70 +440,68 @@
         </div>
 
         <!-- Right Column: Process Status & Summary -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="position-sticky" style="top: 1rem;">
-                <!-- Process Summary Card -->
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white border-0">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="header-info">
-                                <h5 class="card-title mb-1">
-                                    <i class="fas fa-clipboard-check text-success me-2"></i>
-                                    Ringkasan Proses
-                                </h5>
-                                <p class="card-subtitle text-muted mb-0">Status akhir pemrosesan</p>
-                            </div>
-                            <div class="status-indicator">
-                                <span class="status-dot bg-success"></span>
-                                <span class="status-text text-success">Selesai</span>
-                            </div>
+        <div class="result-sidebar-column">
+            <!-- Process Summary Card -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="header-info">
+                            <h5 class="card-title mb-1">
+                                <i class="fas fa-clipboard-check text-success me-2"></i>
+                                Ringkasan Proses
+                            </h5>
+                            <p class="card-subtitle text-muted mb-0">Status akhir pemrosesan</p>
                         </div>
-                    </div>
-                    
-                    <div class="card-body">
-                        <div class="process-summary" id="processSummary">
-                            <!-- Process summary will be populated by JavaScript -->
+                        <div class="status-indicator">
+                            <span class="status-dot bg-success"></span>
+                            <span class="status-text text-success">Selesai</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- QR Code Display Card -->
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-qrcode text-info me-2"></i>
-                            QR Code yang Disematkan
-                        </h5>
+                
+                <div class="card-body">
+                    <div class="process-summary" id="processSummary">
+                        <!-- Process summary will be populated by JavaScript -->
                     </div>
-                    
-                    <div class="card-body text-center">
-                        <div class="qr-display-container" id="qrDisplayContainer">
-                            <div class="qr-preview-large" id="resultQrPreview">
-                                <div class="qr-placeholder">
-                                    <i class="fas fa-qrcode"></i>
-                                    <span>QR Code akan ditampilkan di sini</span>
-                                </div>
+                </div>
+            </div>
+
+            <!-- QR Code Display Card -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-qrcode text-info me-2"></i>
+                        QR Code yang Disematkan
+                    </h5>
+                </div>
+                
+                <div class="card-body text-center">
+                    <div class="qr-display-container" id="qrDisplayContainer">
+                        <div class="qr-preview-large" id="resultQrPreview">
+                            <div class="qr-placeholder">
+                                <i class="fas fa-qrcode"></i>
+                                <span>QR Code akan ditampilkan di sini</span>
                             </div>
-                            <div class="qr-info-compact" id="qrInfoCompact">
-                                <!-- QR info will be populated by JavaScript -->
-                            </div>
+                        </div>
+                        <div class="qr-info-compact" id="qrInfoCompact">
+                            <!-- QR info will be populated by JavaScript -->
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Security Status Card (if applicable) -->
-                <div class="card shadow-sm border-0" id="securityStatusCard" style="display: none;">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-shield-alt text-success me-2"></i>
-                            Status Keamanan
-                        </h5>
-                    </div>
-                    
-                    <div class="card-body">
-                        <div class="security-status-compact" id="securityStatusCompact">
-                            <!-- Security status will be populated by JavaScript -->
-                        </div>
+            <!-- Security Status Card (if applicable) -->
+            <div class="card shadow-sm border-0" id="securityStatusCard" style="display: none;">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt text-success me-2"></i>
+                        Status Keamanan
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="security-status-compact" id="securityStatusCompact">
+                        <!-- Security status will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -307,72 +510,905 @@
 </div>
 
 <style>
-/* Result Page Specific Styles */
-.result-header {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    border-radius: 16px;
+/* ========================================
+   RESULT PAGE MODERN STYLES
+   ======================================== */
+
+/* Page Container */
+.result-page-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 2rem;
-    color: white;
-    box-shadow: 0 8px 32px rgba(40, 167, 69, 0.2);
+}
+
+/* Header Styles */
+.result-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.header-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
 }
 
 .result-title {
-    font-size: 2.25rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
 }
 
 .result-subtitle {
-    font-size: 1.125rem;
-    opacity: 0.9;
+    font-size: 1.1rem;
+    color: #6b7280;
     margin: 0;
 }
 
-.header-actions .btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    backdrop-filter: blur(10px);
+.header-actions {
+    display: flex;
+    gap: 1rem;
 }
 
-.header-actions .btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    color: white;
-}
-
-/* Results Overview Cards */
-.results-overview .overview-card {
-    background: white;
-    border: 1px solid #dee2e6;
+.btn {
+    padding: 0.75rem 1.5rem;
     border-radius: 12px;
-    overflow: hidden;
+    border: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     transition: all 0.3s ease;
-    height: 100%;
+    cursor: pointer;
 }
 
-.results-overview .overview-card:hover {
-    border-color: #0d6efd;
-    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+.btn-new-process {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-new-process:hover {
     transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 }
 
-.overview-card .card-icon {
-    width: 60px;
-    height: 60px;
+.btn-export {
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn-export:hover {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Content Area */
+.result-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Statistics Overview */
+.statistics-overview {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+}
+
+.stat-card:nth-child(1) .stat-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.stat-card:nth-child(2) .stat-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-card:nth-child(3) .stat-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stat-card:nth-child(4) .stat-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1;
+    margin: 0 0 0.25rem 0;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+/* Main Results Area */
+.results-main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+/* Results Panel */
+.results-panel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.panel-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-header h2 {
     font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.view-toggle {
+    display: flex;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    padding: 0.25rem;
+    gap: 0.25rem;
+}
+
+.toggle-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #6b7280;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-btn.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Panel Content */
+.panel-content {
+    padding: 2rem;
+    min-height: 500px;
+}
+
+.view-content {
+    display: none;
+}
+
+.view-content.active {
+    display: block;
+}
+
+/* Image Gallery */
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.gallery-item {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.gallery-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.gallery-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover .gallery-image img {
+    transform: scale(1.05);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .image-overlay {
+    opacity: 1;
+}
+
+.gallery-info {
+    padding: 1.5rem;
+}
+
+.image-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+}
+
+.image-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.stat-mini {
+    text-align: center;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.stat-mini-value {
+    display: block;
+    font-weight: 600;
+    color: #3b82f6;
+    font-size: 0.875rem;
+}
+
+.stat-mini-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Empty States */
+.gallery-empty,
+.comparison-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+}
+
+.gallery-empty h3,
+.comparison-empty h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #4b5563;
+    margin: 0 0 0.5rem 0;
+}
+
+.gallery-empty p,
+.comparison-empty p {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Analysis Panel */
+.analysis-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.card-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* QR Display */
+.qr-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.qr-preview {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9fafb;
+    overflow: hidden;
+}
+
+.qr-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.qr-placeholder {
+    text-align: center;
+    color: #9ca3af;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qr-placeholder i {
+    font-size: 1.5rem;
+}
+
+.qr-placeholder span {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.qr-info {
+    width: 100%;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item .label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.info-item .value {
+    font-size: 0.875rem;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+/* Quality Metrics */
+.quality-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.metric-value small {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 400;
+    margin-left: 0.25rem;
+}
+
+.quality-chart {
+    height: 200px;
+    background: #f8fafc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+}
+
+/* Download Options */
+.download-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.download-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+}
+
+.download-btn:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.btn-content {
+    flex: 1;
+}
+
+.btn-title {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.btn-subtitle {
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Image Modal */
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.image-modal.active {
+    display: flex;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.modal-body {
+    padding: 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.image-comparison {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 2rem;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.comparison-item {
+    text-align: center;
+}
+
+.comparison-item h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+}
+
+.image-wrapper {
+    width: 300px;
+    height: 300px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.comparison-arrow {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.modal-details {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 2rem;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.detail-section h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-item .label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.detail-item .value {
+    font-size: 0.875rem;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .results-main {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .result-page-container {
+        padding: 1rem;
+    }
+    
+    .result-header {
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        text-align: center;
+    }
+    
+    .panel-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .image-comparison {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .comparison-arrow {
+        transform: rotate(90deg);
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .image-wrapper {
+        width: 250px;
+        height: 250px;
+    }
+}
+
+/* Loading Animation */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.loading {
+    animation: pulse 2s infinite;
+}
+
+/* Success Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gallery-item {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.gallery-item:nth-child(2) { animation-delay: 0.1s; }
+.gallery-item:nth-child(3) { animation-delay: 0.2s; }
+.gallery-item:nth-child(4) { animation-delay: 0.3s; }
+</style>
+
+/* Results Overview Cards */
+.results-overview .overview-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.results-overview .overview-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05);
+    transform: translateY(-4px);
+}
+
+.overview-card .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
     margin-bottom: 1rem;
 }
 
@@ -392,44 +1428,47 @@
 }
 
 .overview-card .card-content {
-    padding: 1.5rem;
+    padding: 1.25rem;
 }
 
 .overview-card h4 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    color: #2d3748;
+    color: #1e293b;
     margin-bottom: 0.5rem;
 }
 
 .overview-card p {
-    color: #6c757d;
-    font-size: 0.9rem;
+    color: #64748b;
+    font-size: 0.875rem;
     margin-bottom: 1rem;
+    line-height: 1.5;
 }
 
 /* Results Tabs */
 .results-tabs-container {
     background: white;
-    border: 1px solid #dee2e6;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .results-tab-nav {
     display: flex;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
     overflow-x: auto;
+    padding: 0 0.5rem;
 }
 
 .results-tab-btn {
     flex: 1;
     min-width: 120px;
-    padding: 1rem 1.5rem;
+    padding: 0.875rem 1.25rem;
     background: transparent;
     border: none;
-    color: #6c757d;
+    color: #64748b;
     font-weight: 500;
     transition: all 0.3s ease;
     display: flex;
@@ -437,27 +1476,23 @@
     justify-content: center;
     gap: 0.5rem;
     position: relative;
+    border-bottom: 3px solid transparent;
 }
 
 .results-tab-btn:hover {
-    color: #0d6efd;
-    background: rgba(13, 110, 253, 0.05);
+    color: #3b82f6;
+    background: #f1f5f9;
 }
 
 .results-tab-btn.active {
-    color: #0d6efd;
+    color: #3b82f6;
     background: white;
-    box-shadow: 0 -2px 8px rgba(13, 110, 253, 0.1);
+    font-weight: 600;
+    border-bottom-color: #3b82f6;
 }
 
 .results-tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: #0d6efd;
+    content: none;
 }
 
 .results-tab-content {
@@ -466,7 +1501,7 @@
 
 .results-tab-pane {
     display: none;
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
 .results-tab-pane.active {
@@ -478,14 +1513,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
 }
 
 .images-stats {
     display: flex;
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .stat-item {
@@ -494,16 +1529,18 @@
 
 .stat-number {
     display: block;
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #0d6efd;
+    color: #3b82f6;
     line-height: 1;
 }
 
 .stat-label {
-    font-size: 0.875rem;
-    color: #6c757d;
+    font-size: 0.8rem;
+    color: #64748b;
     margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .images-controls {
@@ -513,10 +1550,10 @@
 
 .view-toggle-btn {
     padding: 0.5rem 1rem;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    color: #6c757d;
+    color: #475569;
     font-size: 0.875rem;
     transition: all 0.3s ease;
     display: flex;
@@ -525,14 +1562,14 @@
 }
 
 .view-toggle-btn:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: #e2e8f0;
 }
 
 .view-toggle-btn.active {
-    background: #0d6efd;
-    border-color: #0d6efd;
+    background: #3b82f6;
+    border-color: #3b82f6;
     color: white;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
 }
 
 /* Results Grid */
@@ -543,13 +1580,13 @@
 
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     min-height: 200px;
 }
 
 .results-grid.compact {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
 }
 
@@ -557,22 +1594,26 @@
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem;
-    color: #6c757d;
+    color: #94a3b8;
+    background-color: #f8fafc;
+    border-radius: 12px;
 }
 
 .results-grid-empty i {
-    font-size: 4rem;
+    font-size: 3rem;
     margin-bottom: 1rem;
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
 .results-grid-empty h4 {
     margin-bottom: 0.5rem;
+    color: #475569;
 }
 
 .results-grid-empty p {
     margin: 0;
     font-size: 0.9rem;
+    color: #64748b;
 }
 
 .grid-nav-buttons {
@@ -591,12 +1632,12 @@
 }
 
 .grid-nav-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: white;
-    border: 1px solid #dee2e6;
-    color: #6c757d;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -605,8 +1646,8 @@
 }
 
 .grid-nav-btn:hover:not(:disabled) {
-    background: #0d6efd;
-    border-color: #0d6efd;
+    background: #3b82f6;
+    border-color: #3b82f6;
     color: white;
 }
 
@@ -621,31 +1662,32 @@
 }
 
 .metrics-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .metrics-header h4 {
-    color: #2d3748;
-    margin-bottom: 0.5rem;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
 }
 
 .metrics-description {
-    color: #6c757d;
+    color: #64748b;
     font-size: 0.9rem;
     margin: 0;
 }
 
 /* Details Accordion */
 .details-accordion {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .accordion-item {
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .accordion-item:last-child {
@@ -654,40 +1696,43 @@
 
 .accordion-header {
     width: 100%;
-    padding: 1rem 1.5rem;
-    background: #f8f9fa;
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
     border: none;
     text-align: left;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-weight: 500;
-    color: #2d3748;
+    font-weight: 600;
+    color: #334155;
     transition: all 0.3s ease;
 }
 
 .accordion-header:hover {
-    background: #e9ecef;
+    background: #f1f5f9;
 }
 
 .accordion-header span {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .accordion-icon {
     transition: transform 0.3s ease;
+    color: #94a3b8;
 }
 
 .accordion-header[aria-expanded="true"] .accordion-icon {
     transform: rotate(180deg);
+    color: #3b82f6;
 }
 
 .accordion-content {
-    padding: 1.5rem;
+    padding: 1.25rem;
     background: white;
     display: none;
+    border-top: 1px solid #e2e8f0;
 }
 
 .accordion-content.show {
@@ -1185,6 +2230,545 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/result-embed.js') }}"></script>
 <script>
-// Additional result page specific enhancements can be added here
+// Global variables
+let processedImages = [];
+let currentImageIndex = 0;
+let qrCodeData = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    initializeResultPage();
+    setupEventListeners();
+    loadProcessingResults();
+});
+
+function initializeResultPage() {
+    console.log('Initializing result page...');
+    
+    // Setup view toggle functionality
+    setupViewToggle();
+    
+    // Setup download functionality
+    setupDownloadHandlers();
+    
+    // Load any cached results
+    loadCachedResults();
+}
+
+function setupEventListeners() {
+    // View toggle buttons
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            switchView(view);
+        });
+    });
+    
+    // Modal close handler
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeImageModal();
+        }
+    });
+    
+    // Keyboard handlers
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImageModal();
+        }
+    });
+}
+
+function setupViewToggle() {
+    const toggleButtons = document.querySelectorAll('.toggle-btn');
+    const viewContents = document.querySelectorAll('.view-content');
+    
+    toggleButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetView = this.getAttribute('data-view');
+            
+            // Update button states
+            toggleButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show target view
+            viewContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === targetView + 'View') {
+                    content.classList.add('active');
+                }
+            });
+        });
+    });
+}
+
+function switchView(viewType) {
+    const views = document.querySelectorAll('.view-content');
+    const buttons = document.querySelectorAll('.toggle-btn');
+    
+    views.forEach(view => view.classList.remove('active'));
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(viewType + 'View').classList.add('active');
+    document.querySelector(`[data-view="${viewType}"]`).classList.add('active');
+    
+    if (viewType === 'comparison' && processedImages.length > 0) {
+        showComparison(processedImages[0]);
+    }
+}
+
+function loadProcessingResults() {
+    // Check if we have results from the processing
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    if (sessionId) {
+        fetchProcessingResults(sessionId);
+    } else {
+        // Try to get results from sessionStorage
+        const savedResults = sessionStorage.getItem('steganographyResults');
+        if (savedResults) {
+            const results = JSON.parse(savedResults);
+            displayResults(results);
+        } else {
+            showNoResults();
+        }
+    }
+}
+
+function fetchProcessingResults(sessionId) {
+    showLoading();
+    
+    fetch(`/api/get-processing-results/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayResults(data.results);
+                // Save results for future reference
+                sessionStorage.setItem('steganographyResults', JSON.stringify(data.results));
+            } else {
+                showError('Gagal memuat hasil processing: ' + data.error);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error fetching results:', error);
+            showError('Terjadi kesalahan saat memuat hasil.');
+        });
+}
+
+function displayResults(results) {
+    console.log('Displaying results:', results);
+    
+    // Update statistics
+    updateStatistics(results);
+    
+    // Display processed images
+    displayProcessedImages(results.processed_images || []);
+    
+    // Display QR code information
+    displayQRInfo(results.qr_data);
+    
+    // Display quality metrics
+    displayQualityMetrics(results.quality_metrics || {});
+    
+    // Display process information
+    displayProcessInfo(results.process_info || {});
+    
+    // Setup download links
+    setupDownloadLinks(results.download_links || {});
+}
+
+function updateStatistics(results) {
+    const totalImages = results.total_images || 0;
+    const processedImages = results.processed_images ? results.processed_images.length : 0;
+    const qrEmbedded = results.qr_embedded || 0;
+    const avgQuality = results.average_quality || 0;
+    
+    // Animate number updates
+    animateNumber('totalImages', totalImages);
+    animateNumber('processedImages', processedImages);
+    animateNumber('qrEmbedded', qrEmbedded);
+    animateNumber('averageQuality', avgQuality, '%');
+}
+
+function animateNumber(elementId, targetValue, suffix = '') {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const startValue = 0;
+    const duration = 2000;
+    const startTime = performance.now();
+    
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+        element.textContent = currentValue + suffix;
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+    
+    requestAnimationFrame(animate);
+}
+
+function displayProcessedImages(images) {
+    processedImages = images;
+    const gallery = document.getElementById('imageGallery');
+    const emptyState = gallery.querySelector('.gallery-empty');
+    
+    if (!images || images.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+    }
+    
+    if (emptyState) emptyState.style.display = 'none';
+    
+    // Clear existing images
+    const existingItems = gallery.querySelectorAll('.gallery-item');
+    existingItems.forEach(item => item.remove());
+    
+    // Add new images
+    images.forEach((image, index) => {
+        const galleryItem = createGalleryItem(image, index);
+        gallery.appendChild(galleryItem);
+    });
+}
+
+function createGalleryItem(imageData, index) {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.style.animationDelay = `${index * 0.1}s`;
+    
+    item.innerHTML = `
+        <div class="gallery-image">
+            <img src="${imageData.processed_path}" alt="Processed Image ${index + 1}" loading="lazy">
+            <div class="image-overlay">
+                <div class="overlay-info">
+                    <h4>${imageData.filename || `Image ${index + 1}`}</h4>
+                    <p>PSNR: ${imageData.psnr || 'N/A'} dB</p>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-info">
+            <h4 class="image-title">${imageData.filename || `Image ${index + 1}`}</h4>
+            <div class="image-stats">
+                <div class="stat-mini">
+                    <span class="stat-mini-value">${imageData.psnr || 'N/A'}</span>
+                    <span class="stat-mini-label">PSNR</span>
+                </div>
+                <div class="stat-mini">
+                    <span class="stat-mini-value">${imageData.mse || 'N/A'}</span>
+                    <span class="stat-mini-label">MSE</span>
+                </div>
+                <div class="stat-mini">
+                    <span class="stat-mini-value">${imageData.ssim || 'N/A'}</span>
+                    <span class="stat-mini-label">SSIM</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    item.addEventListener('click', () => openImageModal(imageData, index));
+    
+    return item;
+}
+
+function displayQRInfo(qrData) {
+    if (!qrData) return;
+    
+    qrCodeData = qrData;
+    
+    // Update QR preview
+    const qrPreview = document.querySelector('.qr-preview');
+    if (qrData.image_path) {
+        qrPreview.innerHTML = `<img src="${qrData.image_path}" alt="QR Code">`;
+    }
+    
+    // Update QR information
+    document.getElementById('qrData').textContent = qrData.data || '-';
+    document.getElementById('qrSize').textContent = qrData.size || '-';
+    document.getElementById('qrErrorLevel').textContent = qrData.error_correction || '-';
+}
+
+function displayQualityMetrics(metrics) {
+    document.getElementById('psnrValue').textContent = metrics.average_psnr || '-';
+    document.getElementById('mseValue').textContent = metrics.average_mse || '-';
+    document.getElementById('ssimValue').textContent = metrics.average_ssim || '-';
+    
+    // TODO: Add chart visualization
+    if (metrics.chart_data) {
+        renderQualityChart(metrics.chart_data);
+    }
+}
+
+function displayProcessInfo(processInfo) {
+    document.getElementById('processTime').textContent = processInfo.duration || '-';
+    document.getElementById('capacityUsed').textContent = processInfo.capacity_used || '-';
+}
+
+function setupDownloadLinks(downloadLinks) {
+    // Document download
+    const docBtn = document.getElementById('downloadDocument');
+    if (downloadLinks.document && docBtn) {
+        docBtn.onclick = () => downloadFile(downloadLinks.document, 'document');
+    }
+    
+    // Images download
+    const imagesBtn = document.getElementById('downloadImages');
+    if (downloadLinks.images && imagesBtn) {
+        imagesBtn.onclick = () => downloadFile(downloadLinks.images, 'images');
+    }
+    
+    // Report download
+    const reportBtn = document.getElementById('downloadReport');
+    if (downloadLinks.report && reportBtn) {
+        reportBtn.onclick = () => downloadFile(downloadLinks.report, 'report');
+    }
+}
+
+function downloadFile(url, type) {
+    showDownloadProgress(type);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => hideDownloadProgress(type), 2000);
+}
+
+function openImageModal(imageData, index) {
+    const modal = document.getElementById('imageModal');
+    
+    // Set modal content
+    document.getElementById('modalTitle').textContent = imageData.filename || `Image ${index + 1}`;
+    document.getElementById('modalOriginalImage').src = imageData.original_path;
+    document.getElementById('modalProcessedImage').src = imageData.processed_path;
+    
+    // Set modal details
+    document.getElementById('modalFileName').textContent = imageData.filename || '-';
+    document.getElementById('modalResolution').textContent = imageData.resolution || '-';
+    document.getElementById('modalFileSize').textContent = imageData.file_size || '-';
+    document.getElementById('modalPSNR').textContent = `${imageData.psnr || 'N/A'} dB`;
+    document.getElementById('modalMSE').textContent = imageData.mse || 'N/A';
+    document.getElementById('modalSSIM').textContent = imageData.ssim || 'N/A';
+    document.getElementById('modalBitsPerPixel').textContent = imageData.bits_per_pixel || '-';
+    document.getElementById('modalCapacityUsed').textContent = imageData.capacity_used || '-';
+    document.getElementById('modalEmbedStatus').textContent = imageData.embed_status || '-';
+    
+    // Show modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function showComparison(imageData) {
+    const container = document.getElementById('comparisonContainer');
+    const emptyState = container.querySelector('.comparison-empty');
+    
+    if (emptyState) emptyState.style.display = 'none';
+    
+    container.innerHTML = `
+        <div class="comparison-view">
+            <div class="comparison-images">
+                <div class="comparison-item">
+                    <h4>Gambar Asli</h4>
+                    <div class="image-wrapper">
+                        <img src="${imageData.original_path}" alt="Original">
+                    </div>
+                </div>
+                <div class="comparison-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="comparison-item">
+                    <h4>Hasil Steganografi</h4>
+                    <div class="image-wrapper">
+                        <img src="${imageData.processed_path}" alt="Processed">
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-details">
+                <h4>Analisis Perbandingan</h4>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">PSNR:</span>
+                        <span class="value">${imageData.psnr || 'N/A'} dB</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">MSE:</span>
+                        <span class="value">${imageData.mse || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">SSIM:</span>
+                        <span class="value">${imageData.ssim || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function exportResults() {
+    if (!processedImages.length) {
+        showAlert('Tidak ada hasil untuk diekspor', 'warning');
+        return;
+    }
+    
+    // Create export data
+    const exportData = {
+        timestamp: new Date().toISOString(),
+        total_images: processedImages.length,
+        qr_data: qrCodeData,
+        images: processedImages,
+        summary: {
+            average_psnr: calculateAveragePSNR(),
+            average_mse: calculateAverageMSE(),
+            average_ssim: calculateAverageSSIM()
+        }
+    };
+    
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `steganography_results_${new Date().getTime()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    showAlert('Hasil berhasil diekspor', 'success');
+}
+
+function calculateAveragePSNR() {
+    if (!processedImages.length) return 0;
+    const total = processedImages.reduce((sum, img) => sum + (parseFloat(img.psnr) || 0), 0);
+    return (total / processedImages.length).toFixed(2);
+}
+
+function calculateAverageMSE() {
+    if (!processedImages.length) return 0;
+    const total = processedImages.reduce((sum, img) => sum + (parseFloat(img.mse) || 0), 0);
+    return (total / processedImages.length).toFixed(4);
+}
+
+function calculateAverageSSIM() {
+    if (!processedImages.length) return 0;
+    const total = processedImages.reduce((sum, img) => sum + (parseFloat(img.ssim) || 0), 0);
+    return (total / processedImages.length).toFixed(4);
+}
+
+// Utility functions
+function showLoading() {
+    // Implement loading state
+    document.body.style.cursor = 'wait';
+}
+
+function hideLoading() {
+    document.body.style.cursor = 'default';
+}
+
+function showError(message) {
+    showAlert(message, 'error');
+}
+
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        <i class="fas fa-${getAlertIcon(type)}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Add to page
+    document.body.appendChild(alert);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+function getAlertIcon(type) {
+    switch (type) {
+        case 'success': return 'check-circle';
+        case 'error': return 'exclamation-circle';
+        case 'warning': return 'exclamation-triangle';
+        default: return 'info-circle';
+    }
+}
+
+function showNoResults() {
+    showAlert('Tidak ada hasil processing yang ditemukan', 'warning');
+}
+
+function loadCachedResults() {
+    // Try to load any cached results from previous session
+    const cached = sessionStorage.getItem('steganographyResults');
+    if (cached) {
+        try {
+            const results = JSON.parse(cached);
+            displayResults(results);
+        } catch (e) {
+            console.error('Error loading cached results:', e);
+        }
+    }
+}
+
+function setupDownloadHandlers() {
+    // Additional download handlers can be setup here
+    console.log('Download handlers setup complete');
+}
+
+function showDownloadProgress(type) {
+    // Show download progress indicator
+    const btn = document.getElementById(`download${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    if (btn) {
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `
+            <div class="btn-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div class="btn-content">
+                <span class="btn-title">Mengunduh...</span>
+                <span class="btn-subtitle">Mohon tunggu</span>
+            </div>
+        `;
+        btn.disabled = true;
+        
+        // Store original for restoration
+        btn.dataset.originalHtml = originalHTML;
+    }
+}
+
+function hideDownloadProgress(type) {
+    const btn = document.getElementById(`download${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    if (btn && btn.dataset.originalHtml) {
+        btn.innerHTML = btn.dataset.originalHtml;
+        btn.disabled = false;
+        delete btn.dataset.originalHtml;
+    }
+}
+
+// Make functions globally available
+window.closeImageModal = closeImageModal;
+window.exportResults = exportResults;
 </script>
 {% endblock %}
