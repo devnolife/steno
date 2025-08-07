@@ -1,0 +1,1190 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Penyematan - Watermarking Bahan Ajar Digital{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="result-header">
+                <div class="header-content">
+                    <h1 class="result-title">
+                        <i class="fas fa-check-circle text-success"></i>
+                        Penyematan Selesai
+                    </h1>
+                    <p class="result-subtitle">Dokumen dengan watermark QR telah berhasil diproses</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/embed'">
+                        <i class="fas fa-plus"></i>
+                        Proses Dokumen Baru
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Content -->
+    <div class="row g-4">
+        <!-- Left Column: Main Results -->
+        <div class="col-xl-8 col-lg-7">
+            <!-- Results Overview Cards -->
+            <div class="results-overview mb-4">
+                <div class="row g-3">
+                    <!-- Download Card -->
+                    <div class="col-md-6">
+                        <div class="overview-card download-card">
+                            <div class="card-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Unduh Dokumen</h4>
+                                <p>Dokumen dengan watermark sudah siap</p>
+                                <div class="download-links" id="embedDownload">
+                                    <!-- Download links will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Info Card -->
+                    <div class="col-md-6">
+                        <div class="overview-card qr-card">
+                            <div class="card-icon">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Informasi QR Code</h4>
+                                <div class="qr-result-info" id="qrResultInfo">
+                                    <!-- QR info will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Card (if applicable) -->
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <div class="overview-card security-card" id="securityCard" style="display: none;">
+                            <div class="card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Keamanan Dokumen</h4>
+                                <div class="security-result-info" id="securityResultInfo">
+                                    <!-- Security info will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Tabs -->
+            <div class="results-tabs-container">
+                <!-- Tab Navigation -->
+                <div class="results-tab-nav">
+                    <button class="results-tab-btn active" data-tab="images">
+                        <i class="fas fa-images"></i>
+                        <span>Gambar</span>
+                    </button>
+                    <button class="results-tab-btn" data-tab="metrics">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Metrik</span>
+                    </button>
+                    <button class="results-tab-btn" data-tab="details">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Detail</span>
+                    </button>
+                </div>
+                
+                <!-- Tab Contents -->
+                <div class="results-tab-content">
+                    <!-- Images Tab -->
+                    <div class="results-tab-pane active" id="tab-images">
+                        <div class="images-tab-header">
+                            <div class="images-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number" id="totalImagesCount">0</span>
+                                    <span class="stat-label">Total Gambar</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="processedImagesCount">0</span>
+                                    <span class="stat-label">Berhasil Diproses</span>
+                                </div>
+                            </div>
+                            
+                            <div class="images-controls">
+                                <button type="button" class="view-toggle-btn active" id="gridViewNormal">
+                                    <i class="fas fa-th"></i>
+                                    Normal
+                                </button>
+                                <button type="button" class="view-toggle-btn" id="gridViewCompact">
+                                    <i class="fas fa-th-large"></i>
+                                    Compact
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="results-grid-wrapper">
+                            <div class="grid-nav-buttons grid-nav-left">
+                                <button type="button" class="grid-nav-btn" id="gridNavLeft" disabled title="Geser ke kiri">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="results-grid" id="processedImagesGrid">
+                                <div class="results-grid-loading" id="gridLoading" style="display: none;">
+                                    <div class="grid-loading-spinner"></div>
+                                    <span>Memproses gambar...</span>
+                                </div>
+                                
+                                <div class="results-grid-empty" id="gridEmpty">
+                                    <i class="fas fa-image"></i>
+                                    <h4>Belum ada gambar yang diproses</h4>
+                                    <p>Gambar akan muncul setelah proses embedding selesai</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid-nav-buttons grid-nav-right">
+                                <button type="button" class="grid-nav-btn" id="gridNavRight" disabled title="Geser ke kanan">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Tab -->
+                    <div class="results-tab-pane" id="tab-metrics">
+                        <div class="metrics-container">
+                            <div class="metrics-header">
+                                <h4><i class="fas fa-tachometer-alt"></i> Metrik Kualitas</h4>
+                                <p class="metrics-description">
+                                    Analisis kualitas gambar setelah proses watermarking menggunakan steganografi LSB
+                                </p>
+                            </div>
+                            <div class="metrics-content" id="embedMetrics">
+                                <!-- Metrics will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Details Tab -->
+                    <div class="results-tab-pane" id="tab-details">
+                        <div class="details-container">
+                            <div class="details-accordion">
+                                
+                                <!-- Process Log Section -->
+                                <div class="accordion-item">
+                                    <button class="accordion-header" type="button" data-target="processLog">
+                                        <span>
+                                            <i class="fas fa-list-alt"></i>
+                                            Log Proses
+                                        </span>
+                                        <i class="fas fa-chevron-down accordion-icon"></i>
+                                    </button>
+                                    <div class="accordion-content" id="processLog">
+                                        <div class="process-log" id="embedLog">
+                                            <!-- Process log will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Detailed Analysis Section -->
+                                <div class="accordion-item">
+                                    <button class="accordion-header" type="button" data-target="detailedAnalysis">
+                                        <span>
+                                            <i class="fas fa-microscope"></i>
+                                            Analisis Detail
+                                        </span>
+                                        <i class="fas fa-chevron-down accordion-icon"></i>
+                                    </button>
+                                    <div class="accordion-content" id="detailedAnalysis">
+                                        <div class="detailed-process" id="detailedProcess">
+                                            <h5><i class="fas fa-microscope"></i> Analisis Detail Steganografi</h5>
+                                            <div id="detailedSteps">
+                                                <!-- Detailed analysis will be populated by JavaScript -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Calculation Details Section -->
+                                <div class="accordion-item">
+                                    <button class="accordion-header" type="button" data-target="calculationDetailsContent">
+                                        <span>
+                                            <i class="fas fa-calculator"></i>
+                                            Detail Kalkulasi
+                                        </span>
+                                        <i class="fas fa-chevron-down accordion-icon"></i>
+                                    </button>
+                                    <div class="accordion-content" id="calculationDetailsContent">
+                                        <div class="calculation-details" id="calculationDetails">
+                                            <!-- Calculation details will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Process Status & Summary -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="position-sticky" style="top: 1rem;">
+                <!-- Process Summary Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="header-info">
+                                <h5 class="card-title mb-1">
+                                    <i class="fas fa-clipboard-check text-success me-2"></i>
+                                    Ringkasan Proses
+                                </h5>
+                                <p class="card-subtitle text-muted mb-0">Status akhir pemrosesan</p>
+                            </div>
+                            <div class="status-indicator">
+                                <span class="status-dot bg-success"></span>
+                                <span class="status-text text-success">Selesai</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="process-summary" id="processSummary">
+                            <!-- Process summary will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QR Code Display Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-qrcode text-info me-2"></i>
+                            QR Code yang Disematkan
+                        </h5>
+                    </div>
+                    
+                    <div class="card-body text-center">
+                        <div class="qr-display-container" id="qrDisplayContainer">
+                            <div class="qr-preview-large" id="resultQrPreview">
+                                <div class="qr-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>QR Code akan ditampilkan di sini</span>
+                                </div>
+                            </div>
+                            <div class="qr-info-compact" id="qrInfoCompact">
+                                <!-- QR info will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Status Card (if applicable) -->
+                <div class="card shadow-sm border-0" id="securityStatusCard" style="display: none;">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-shield-alt text-success me-2"></i>
+                            Status Keamanan
+                        </h5>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="security-status-compact" id="securityStatusCompact">
+                            <!-- Security status will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Result Page Specific Styles */
+.result-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    box-shadow: 0 8px 32px rgba(40, 167, 69, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.result-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.result-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.header-actions .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.header-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+/* Results Overview Cards */
+.results-overview .overview-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.results-overview .overview-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+    transform: translateY(-2px);
+}
+
+.overview-card .card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.download-card .card-icon {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.qr-card .card-icon {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+}
+
+.security-card .card-icon {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.overview-card .card-content {
+    padding: 1.5rem;
+}
+
+.overview-card h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.overview-card p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+/* Results Tabs */
+.results-tabs-container {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.results-tab-nav {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    overflow-x: auto;
+}
+
+.results-tab-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.results-tab-btn:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.results-tab-btn.active {
+    color: #0d6efd;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(13, 110, 253, 0.1);
+}
+
+.results-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #0d6efd;
+}
+
+.results-tab-content {
+    min-height: 400px;
+}
+
+.results-tab-pane {
+    display: none;
+    padding: 2rem;
+}
+
+.results-tab-pane.active {
+    display: block;
+}
+
+/* Images Tab Styles */
+.images-tab-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.images-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0d6efd;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.images-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.view-toggle-btn {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.view-toggle-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.view-toggle-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* Results Grid */
+.results-grid-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    min-height: 200px;
+}
+
+.results-grid.compact {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.results-grid-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.results-grid-empty i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.results-grid-empty h4 {
+    margin-bottom: 0.5rem;
+}
+
+.results-grid-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.grid-nav-buttons {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.grid-nav-left {
+    left: -50px;
+}
+
+.grid-nav-right {
+    right: -50px;
+}
+
+.grid-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.grid-nav-btn:hover:not(:disabled) {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.grid-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Metrics Container */
+.metrics-container {
+    text-align: left;
+}
+
+.metrics-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.metrics-header h4 {
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.metrics-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Details Accordion */
+.details-accordion {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.accordion-item {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.accordion-item:last-child {
+    border-bottom: none;
+}
+
+.accordion-header {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border: none;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 500;
+    color: #2d3748;
+    transition: all 0.3s ease;
+}
+
+.accordion-header:hover {
+    background: #e9ecef;
+}
+
+.accordion-header span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+}
+
+.accordion-header[aria-expanded="true"] .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    padding: 1.5rem;
+    background: white;
+    display: none;
+}
+
+.accordion-content.show {
+    display: block;
+}
+
+/* QR Display */
+.qr-display-container {
+    text-align: center;
+}
+
+.qr-preview-large {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.qr-preview-large img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+}
+
+.qr-placeholder {
+    text-align: center;
+    color: #6c757d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qr-placeholder i {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.qr-placeholder span {
+    font-size: 0.875rem;
+}
+
+/* Process Summary */
+.process-summary {
+    display: grid;
+    gap: 1rem;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.summary-label {
+    font-weight: 500;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Download Section Styles */
+.download-item {
+    padding: 1.5rem;
+}
+
+.download-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.download-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.download-info {
+    flex: 1;
+}
+
+.download-name {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.download-type {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.download-actions {
+    margin-top: 1rem;
+}
+
+/* QR Display Styles */
+.qr-info-item {
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.qr-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.qr-detail-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.qr-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.qr-detail-item:last-child {
+    border-bottom: none;
+}
+
+.qr-detail-item .label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.qr-detail-item .value {
+    color: #2d3748;
+    font-weight: 500;
+    text-align: right;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Security Styles */
+.security-detail-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.security-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.security-detail-item:last-child {
+    border-bottom: none;
+}
+
+.security-detail-item .label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.security-detail-item .value {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.security-status-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.status-content {
+    flex: 1;
+}
+
+.status-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.status-desc {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.security-binding-info {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-align: center;
+}
+
+/* Metrics Styles */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.metric-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+/* Image Comparison Cards */
+.image-comparison-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.image-comparison-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+    transform: translateY(-2px);
+}
+
+.image-comparison-header {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.image-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.image-metrics {
+    display: flex;
+    gap: 1rem;
+}
+
+.metric {
+    font-size: 0.75rem;
+    color: #6c757d;
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.image-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
+}
+
+.image-container {
+    text-align: center;
+}
+
+.image-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.image-wrapper {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.image-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.comparison-arrow {
+    color: #0d6efd;
+    font-size: 1.25rem;
+    padding: 0 0.5rem;
+}
+
+/* Process Log Styles */
+.process-log-entries {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.log-entry {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    min-width: 80px;
+    font-family: monospace;
+}
+
+.log-message {
+    flex: 1;
+    font-size: 0.875rem;
+    color: #2d3748;
+    line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .result-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .result-title {
+        font-size: 1.75rem;
+    }
+    
+    .images-tab-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .images-stats {
+        justify-content: center;
+    }
+    
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .grid-nav-buttons {
+        display: none;
+    }
+    
+    .image-comparison-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .comparison-arrow {
+        transform: rotate(90deg);
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .results-tab-nav {
+        flex-direction: column;
+    }
+    
+    .results-tab-btn {
+        min-width: auto;
+        flex: none;
+    }
+    
+    .qr-preview-large {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .download-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .download-actions {
+        text-align: center;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .result-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .result-title {
+        font-size: 1.75rem;
+    }
+    
+    .images-tab-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .images-stats {
+        justify-content: center;
+    }
+    
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .grid-nav-buttons {
+        display: none;
+    }
+}
+
+@media (max-width: 576px) {
+    .results-tab-nav {
+        flex-direction: column;
+    }
+    
+    .results-tab-btn {
+        min-width: auto;
+        flex: none;
+    }
+    
+    .qr-preview-large {
+        width: 150px;
+        height: 150px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/result-embed.js') }}"></script>
+<script>
+// Additional result page specific enhancements can be added here
+</script>
+{% endblock %}

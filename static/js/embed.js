@@ -68,12 +68,24 @@ function showDocumentPreview(file) {
 function hideDocumentPreview() {
   const preview = document.getElementById('documentPreview');
   if (preview) {
-    preview.style.display = 'none';
+    preview.classList.add('d-none');
   }
   hideAllStatusIndicators();
 }
 
+// Function to clear document upload
+function clearDocumentUpload() {
+  const documentFileInput = document.getElementById('documentFile');
+  if (documentFileInput) {
+    documentFileInput.value = '';
+  }
+  hideDocumentPreview();
+}
+
 function formatFileSize(bytes) {
+  if (typeof bytes !== 'number' || bytes === null || isNaN(bytes) || bytes < 0) {
+    return '0 Bytes';
+  }
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -500,8 +512,18 @@ async function handleIntegratedEmbedding(form) {
     if (result.success) {
       // Update progress to completion
       updateProgressStep(4, 'Complete!');
-      await displayIntegratedResults(result);
-      showAlert('Document embedding completed successfully!', 'success');
+
+      // Store result data in sessionStorage for results page
+      sessionStorage.setItem('embedResults', JSON.stringify(result));
+
+      // Show brief success message and redirect
+      showAlert('Document embedding completed successfully! Redirecting to results...', 'success');
+
+      // Redirect to results page after a short delay
+      setTimeout(() => {
+        window.location.href = '/embed/results';
+      }, 2000);
+
     } else {
       // Handle specific error types
       if (result.security_error) {
@@ -548,6 +570,10 @@ function validateEmbedForm(form) {
 
 function showProgressContainer() {
   const progressContainer = document.getElementById('progressContainer');
+  if (!progressContainer) {
+    console.warn('Progress container not found in DOM');
+    return;
+  }
   progressContainer.style.display = 'block';
 
   // Reset all steps
@@ -559,47 +585,251 @@ function showProgressContainer() {
 
 function hideProgressContainer() {
   const progressContainer = document.getElementById('progressContainer');
+  if (!progressContainer) {
+    console.warn('Progress container not found in DOM');
+    return;
+  }
   progressContainer.style.display = 'none';
 }
 
 function updateProgressStep(stepNumber, message) {
   const progressText = document.getElementById('progressText');
-  const steps = document.querySelectorAll('.step');
+  const progressPercentage = document.getElementById('progressPercentage');
+  const steps = document.querySelectorAll('.modern-step');
 
-  progressText.textContent = message;
+  if (progressText) {
+    progressText.textContent = message;
+  }
 
-  // Update step indicators
+  // Update overall progress percentage
+  const percentage = Math.round((stepNumber / 4) * 100);
+  if (progressPercentage) {
+    progressPercentage.textContent = `${percentage}%`;
+  }
+
+  // Update modern step indicators
   steps.forEach((step, index) => {
     const stepNum = index + 1;
+    const stepStatus = step.querySelector('.step-status i');
+
     if (stepNum < stepNumber) {
       step.classList.add('completed');
-      step.classList.remove('active');
+      step.classList.remove('active', 'pending');
+      if (stepStatus) {
+        stepStatus.className = 'fas fa-check-circle status-completed';
+      }
     } else if (stepNum === stepNumber) {
       step.classList.add('active');
-      step.classList.remove('completed');
+      step.classList.remove('completed', 'pending');
+      if (stepStatus) {
+        stepStatus.className = 'fas fa-spinner fa-pulse status-active';
+      }
+
+      // Add special handling for steganography step
+      if (stepNumber === 3) {
+        showSteganographyVisualization();
+      }
     } else {
       step.classList.remove('active', 'completed');
+      step.classList.add('pending');
+      if (stepStatus) {
+        stepStatus.className = 'fas fa-clock status-pending';
+      }
     }
   });
 
-  // Update progress bar
+  // Update progress bar with glow effect
   const progressFill = document.querySelector('.progress-fill');
-  const percentage = (stepNumber / 4) * 100;
-  progressFill.style.width = `${percentage}%`;
+  const progressGlow = document.querySelector('.progress-glow');
+  if (progressFill) {
+    progressFill.style.width = `${percentage}%`;
+    if (progressGlow) {
+      progressGlow.style.width = `${percentage}%`;
+    }
+  }
+
+  // Update overall status indicator
+  updateOverallStatus(stepNumber, message);
+
+  // Update time estimates
+  updateTimeEstimates(stepNumber);
+}
+
+function updateOverallStatus(stepNumber, message) {
+  const statusIndicator = document.getElementById('overallStatus');
+  if (!statusIndicator) return;
+
+  const statusDot = statusIndicator.querySelector('.status-dot');
+  const statusText = statusIndicator.querySelector('.status-text');
+
+  let statusClass = 'status-processing';
+  let statusMessage = message;
+
+  if (stepNumber === 4) {
+    statusClass = 'status-completed';
+    statusMessage = 'Selesai';
+  } else if (stepNumber > 0) {
+    statusClass = 'status-processing';
+  }
+
+  if (statusDot) {
+    statusDot.className = `status-dot ${statusClass}`;
+  }
+  if (statusText) {
+    statusText.textContent = statusMessage;
+  }
+}
+
+function showSteganographyVisualization() {
+  const stegoViz = document.getElementById('stegoProcessViz');
+  if (!stegoViz) return;
+
+  stegoViz.style.display = 'block';
+  stegoViz.classList.add('active');
+
+  // Animate process arrow
+  const processArrow = stegoViz.querySelector('.process-arrow');
+  if (processArrow) {
+    processArrow.classList.add('processing');
+  }
+
+  // Show QR embedding visualization
+  const qrViz = document.getElementById('qrEmbeddingViz');
+  if (qrViz) {
+    qrViz.style.display = 'block';
+    qrViz.classList.add('active');
+  }
+}
+
+function updateSteganographyProgress(currentImage, totalImages, imageData) {
+  // Update image counters
+  const currentImageEl = document.getElementById('currentImage');
+  const totalImagesEl = document.getElementById('totalImages');
+
+  if (currentImageEl) currentImageEl.textContent = currentImage;
+  if (totalImagesEl) totalImagesEl.textContent = totalImages;
+
+  // Update image previews if data is available
+  if (imageData) {
+    updateImagePreviews(imageData);
+  }
+
+  // Update process step text
+  const processStepText = document.getElementById('processStepText');
+  if (processStepText) {
+    processStepText.textContent = `Memproses gambar ${currentImage}/${totalImages}`;
+  }
+}
+
+function updateImagePreviews(imageData) {
+  // Update original image preview
+  const originalPreview = document.getElementById('originalPreview');
+  if (originalPreview && imageData.original_url) {
+    originalPreview.innerHTML = `<img src="${imageData.original_url}" alt="Original Image">`;
+
+    // Update original image info
+    const originalSize = document.getElementById('originalSize');
+    const originalFormat = document.getElementById('originalFormat');
+    if (originalSize && imageData.original_size) {
+      originalSize.textContent = formatFileSize(imageData.original_size);
+    }
+    if (originalFormat && imageData.format) {
+      originalFormat.textContent = imageData.format.toUpperCase();
+    }
+  }
+
+  // Update watermarked image preview
+  const watermarkedPreview = document.getElementById('watermarkedPreview');
+  if (watermarkedPreview && imageData.watermarked_url) {
+    watermarkedPreview.innerHTML = `<img src="${imageData.watermarked_url}" alt="Watermarked Image">`;
+
+    // Update quality metrics
+    const psnrValue = document.getElementById('psnrValue');
+    const mseValue = document.getElementById('mseValue');
+    if (psnrValue && imageData.psnr) {
+      psnrValue.textContent = `${imageData.psnr.toFixed(2)} dB`;
+    }
+    if (mseValue && imageData.mse) {
+      mseValue.textContent = imageData.mse.toFixed(6);
+    }
+  }
+
+  // Add success animation
+  if (imageData.completed) {
+    const watermarkedContainer = watermarkedPreview.closest('.image-preview');
+    if (watermarkedContainer) {
+      watermarkedContainer.classList.add('processing-complete');
+    }
+  }
+}
+
+function updateQrEmbeddingInfo(qrData) {
+  const embeddingQrData = document.getElementById('embeddingQrData');
+  const embeddingQrPreview = document.getElementById('embeddingQrPreview');
+
+  if (embeddingQrData && qrData.data) {
+    const displayData = qrData.data.length > 30
+      ? qrData.data.substring(0, 30) + '...'
+      : qrData.data;
+    embeddingQrData.textContent = displayData;
+  }
+
+  if (embeddingQrPreview && qrData.qr_url) {
+    embeddingQrPreview.innerHTML = `<img src="${qrData.qr_url}" alt="QR Code">`;
+  }
+}
+
+function updateTimeEstimates(stepNumber) {
+  const timeEstimate = document.getElementById('timeEstimate');
+  const processSpeed = document.getElementById('processSpeed');
+
+  if (!timeEstimate || !processSpeed) return;
+
+  // Simple time estimation based on step
+  let estimatedSeconds = 0;
+  switch (stepNumber) {
+    case 1: estimatedSeconds = 45; break;
+    case 2: estimatedSeconds = 30; break;
+    case 3: estimatedSeconds = 60; break;
+    case 4: estimatedSeconds = 0; break;
+  }
+
+  if (estimatedSeconds > 0) {
+    timeEstimate.textContent = `${estimatedSeconds}s`;
+    processSpeed.textContent = 'Normal';
+  } else {
+    timeEstimate.textContent = '-';
+    processSpeed.textContent = '-';
+  }
 }
 
 function startProgressPolling(processId) {
   const progressFill = document.querySelector('.progress-fill');
-  progressFill.style.width = '0%';
+  if (progressFill) {
+    progressFill.style.width = '0%';
+  }
 
   progressInterval = setInterval(async () => {
     try {
       const res = await fetch(`/progress/${processId}`);
       if (!res.ok) return;
       const data = await res.json();
+
       if (data.success && data.total > 0) {
         updateEmbedProgress(data.current, data.total);
+
+        // Update steganography visualization if in step 3
+        if (data.step === 3 || data.current > 0) {
+          updateSteganographyProgress(data.current, data.total, data.current_image);
+        }
+
+        // Update QR embedding info if available
+        if (data.qr_info) {
+          updateQrEmbeddingInfo(data.qr_info);
+        }
+
         if (data.status === 'completed' || data.current >= data.total) {
+          completeSteganographyProcess();
           stopProgressPolling();
         }
       }
@@ -607,6 +837,26 @@ function startProgressPolling(processId) {
       console.error('Progress polling error:', err);
     }
   }, 1000);
+}
+
+function completeSteganographyProcess() {
+  // Add completion animations
+  const stegoViz = document.getElementById('stegoProcessViz');
+  if (stegoViz) {
+    stegoViz.classList.add('completed');
+  }
+
+  const processArrow = document.querySelector('.process-arrow');
+  if (processArrow) {
+    processArrow.classList.remove('processing');
+    processArrow.classList.add('completed');
+  }
+
+  // Show success message
+  const processStepText = document.getElementById('processStepText');
+  if (processStepText) {
+    processStepText.innerHTML = '<i class="fas fa-check-circle"></i> Selesai!';
+  }
 }
 
 function stopProgressPolling() {
@@ -618,15 +868,22 @@ function stopProgressPolling() {
 
 function updateEmbedProgress(current, total) {
   const progressFill = document.querySelector('.progress-fill');
-  const percentage = Math.round((current / total) * 100);
-  progressFill.style.width = `${percentage}%`;
+  if (progressFill) {
+    const percentage = Math.round((current / total) * 100);
+    progressFill.style.width = `${percentage}%`;
+  }
+
   const progressText = document.getElementById('progressText');
-  progressText.textContent = `Menyematkan watermark (${current}/${total})`;
+  if (progressText) {
+    progressText.textContent = `Menyematkan watermark (${current}/${total})`;
+  }
 }
 
 async function displayIntegratedResults(result) {
   const resultsPanel = document.getElementById('resultsPanel');
-  resultsPanel.style.display = 'block';
+  if (resultsPanel) {
+    resultsPanel.style.display = 'block';
+  }
 
   // Hide progress container
   hideProgressContainer();
@@ -643,7 +900,7 @@ async function displayIntegratedResults(result) {
   }
 
   // Display quality metrics
-  if (result.quality_metrics) {
+  if (result.quality_metrics && typeof result.quality_metrics === 'object') {
     displayQualityMetrics(result.quality_metrics);
   }
 
@@ -655,6 +912,10 @@ async function displayIntegratedResults(result) {
 
 function displayDocumentDownload(documentInfo) {
   const downloadSection = document.getElementById('embedDownload');
+  if (!downloadSection) {
+    console.warn('Download section not found in DOM');
+    return;
+  }
   downloadSection.innerHTML = `
         <div class="download-item">
             <div class="download-icon">
@@ -673,6 +934,11 @@ function displayDocumentDownload(documentInfo) {
 
 function displayQRInformation(qrInfo) {
   const qrResultInfo = document.getElementById('qrResultInfo');
+  if (!qrResultInfo) {
+    console.warn('QR result info element not found in DOM');
+    return;
+  }
+
   const qrGenerated = qrInfo.generated ? 'Generated from text' : 'Uploaded file';
   const qrData = qrInfo.data || 'N/A';
 
@@ -697,10 +963,16 @@ function displayQRInformation(qrInfo) {
 }
 
 function displaySecurityInformation(securityInfo) {
-  const securityResultSection = document.getElementById('securityResultSection');
+  const securityCard = document.getElementById('securityCard');
   const securityResultInfo = document.getElementById('securityResultInfo');
 
-  securityResultSection.style.display = 'block';
+  // Add null checks to prevent errors
+  if (!securityCard || !securityResultInfo) {
+    console.warn('Security result elements not found in DOM');
+    return;
+  }
+
+  securityCard.style.display = 'block';
 
   let securityContent = `
         <div class="security-status-display">
@@ -731,8 +1003,17 @@ function displaySecurityInformation(securityInfo) {
 
 function displayQualityMetrics(metrics) {
   const embedMetrics = document.getElementById('embedMetrics');
+  if (!embedMetrics) {
+    console.warn('Embed metrics element not found in DOM');
+    return;
+  }
 
-  if (metrics.mse !== undefined && metrics.psnr !== undefined) {
+  // Add debugging information
+  console.log('Quality metrics received:', metrics);
+
+  if (metrics.mse !== undefined && metrics.psnr !== undefined &&
+    metrics.mse !== null && metrics.psnr !== null &&
+    typeof metrics.mse === 'number' && typeof metrics.psnr === 'number') {
     embedMetrics.innerHTML = `
             <div class="metrics-grid">
                 <div class="metric-item">
@@ -748,12 +1029,18 @@ function displayQualityMetrics(metrics) {
             </div>
         `;
   } else {
+    // Log details about why metrics are not available
+    console.warn('Quality metrics not available. MSE:', metrics?.mse, 'PSNR:', metrics?.psnr);
     embedMetrics.innerHTML = '<p>Quality metrics not available</p>';
   }
 }
 
 function displayProcessedImages(processedImages, publicDir) {
-  const processedImagesContainer = document.getElementById('processedImages');
+  const processedImagesContainer = document.getElementById('processedImagesGrid');
+  if (!processedImagesContainer) {
+    console.warn('Processed images container not found in DOM');
+    return;
+  }
 
   if (!processedImages || processedImages.length === 0) {
     processedImagesContainer.innerHTML = '<p>No images were processed</p>';
@@ -784,6 +1071,9 @@ function displayProcessedImages(processedImages, publicDir) {
 }
 
 function getQualityRating(psnr) {
+  if (typeof psnr !== 'number' || psnr === null || isNaN(psnr)) {
+    return 'Unknown';
+  }
   if (psnr >= 40) return 'Excellent';
   if (psnr >= 30) return 'Good';
   if (psnr >= 20) return 'Fair';
@@ -812,14 +1102,18 @@ function hideResults() {
     resultsPanel.style.display = 'none';
   }
 
-  const securityResultSection = document.getElementById('securityResultSection');
-  if (securityResultSection) {
-    securityResultSection.style.display = 'none';
+  const securityCard = document.getElementById('securityCard');
+  if (securityCard) {
+    securityCard.style.display = 'none';
   }
 }
 
 function showAlert(message, type = 'info') {
   const alertElement = document.getElementById('embedAlert');
+  if (!alertElement) {
+    console.warn('Alert element not found in DOM');
+    return;
+  }
   alertElement.className = `alert alert-${type}`;
   alertElement.textContent = message;
   alertElement.style.display = 'block';
@@ -827,6 +1121,10 @@ function showAlert(message, type = 'info') {
 
 function clearAlert() {
   const alertElement = document.getElementById('embedAlert');
+  if (!alertElement) {
+    console.warn('Alert element not found in DOM');
+    return;
+  }
   alertElement.style.display = 'none';
 }
 

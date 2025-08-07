@@ -1,0 +1,2702 @@
+{% extends "base.html" %}
+
+{% block title %}Sematkan Dokumen Aman - Watermarking Bahan Ajar Digital{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <div class="row">
+        <!-- Header Section -->
+        <div class="col-12 mb-4">
+            <div class="page-header">
+                <div class="header-content">
+                    <h1 class="page-title">
+                        <i class="fas fa-shield-alt text-primary"></i>
+                        Sematkan Dokumen Aman
+                    </h1>
+                    <p class="page-subtitle">Integrasikan QR Code dengan teknologi steganografi untuk keamanan maksimal</p>
+                </div>
+                <div class="header-actions">
+                    <div class="status-badge" id="pageStatus">
+                        <i class="fas fa-circle text-success"></i>
+                        <span>Siap untuk Memproses</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Left Column: Forms and Configuration -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form id="embedForm">
+                        <!-- Document Upload Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-file-text text-primary"></i>
+                                </div>
+                                <div class="section-info">
+                                    <h4 class="section-title">Unggah Dokumen</h4>
+                                    <p class="section-subtitle">Pilih dokumen DOCX atau PDF yang akan diproses</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-upload me-2"></i>
+                                    Dokumen (DOCX/PDF)
+                                </label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" id="documentFile" name="documentFile" 
+                                           accept=".docx,.pdf" class="file-upload-input" required>
+                                    <label for="documentFile" class="file-upload-label">
+                                        <div class="upload-content">
+                                            <div class="upload-icon">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                            </div>
+                                            <div class="upload-text">
+                                                <span class="upload-title">Klik untuk memilih file</span>
+                                                <span class="upload-subtitle">atau seret dan lepas file di sini</span>
+                                            </div>
+                                        </div>
+                                        <div class="upload-formats">
+                                            <span class="format-tag">DOCX</span>
+                                            <span class="format-tag">PDF</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- Document Preview and Image Status -->
+                                  <div class="document-preview d-none" id="documentPreview">
+                                    <div class="preview-header">
+                                        <div class="preview-icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <div class="preview-info">
+                                            <div class="preview-filename" id="previewFilename"></div>
+                                            <div class="preview-details">
+                                                <span class="preview-size" id="previewSize"></span>
+                                                <span class="preview-type">Dokumen</span>
+                                            </div>
+                                        </div>
+                                        <div class="preview-actions">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearDocumentUpload()">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Image Status Indicator -->
+                                    <div class="image-status mt-3" id="imageStatus">
+                                        <div class="status-checking d-none" id="statusChecking">
+                                            <div class="status-content">
+                                                <div class="status-icon">
+                                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                </div>
+                                                <div class="status-info">
+                                                    <div class="status-title">Menganalisis Dokumen...</div>
+                                                    <div class="status-description">Memeriksa gambar yang dapat diproses untuk watermarking</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="status-has-images d-none" id="statusHasImages">
+                                            <div class="status-content alert alert-success border-0">
+                                                <div class="status-icon">
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                </div>
+                                                <div class="status-info">
+                                                    <div class="status-title">✓ Dokumen Siap Diproses</div>
+                                                    <div class="status-description">
+                                                        Ditemukan <span class="fw-bold" id="imageCount">0</span> gambar yang dapat diproses
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="status-no-images d-none" id="statusNoImages">
+                                            <div class="status-content alert alert-warning border-0">
+                                                <div class="status-icon">
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                </div>
+                                                <div class="status-info">
+                                                    <div class="status-title">Tidak Ada Gambar Ditemukan</div>
+                                                    <div class="status-description">
+                                                        Dokumen ini tidak mengandung gambar yang dapat diproses
+                                                    </div>
+                                                </div>
+                                                <div class="status-actions mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="showImageRequirements()">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        Lihat Persyaratan
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="status-error d-none" id="statusError">
+                                            <div class="status-content alert alert-danger border-0">
+                                                <div class="status-icon">
+                                                    <i class="fas fa-exclamation-circle text-danger"></i>
+                                                </div>
+                                                <div class="status-info">
+                                                    <div class="status-title">Gagal Menganalisis Dokumen</div>
+                                                    <div class="status-description" id="errorDescription">
+                                                        Terjadi kesalahan saat menganalisis dokumen
+                                                    </div>
+                                                </div>
+                                                <div class="status-actions mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="retryDocumentAnalysis()">
+                                                        <i class="fas fa-redo"></i>
+                                                        Coba Lagi
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- QR Data Input Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-qrcode text-info"></i>
+                                </div>
+                                <div class="section-info">
+                                    <h4 class="section-title">Konfigurasi QR Code</h4>
+                                    <p class="section-subtitle">Buat QR Code baru atau gunakan file yang sudah ada</p>
+                                </div>
+                            </div>
+                            
+                            <!-- QR Input Mode Selector -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-cog me-2"></i>
+                                    Mode Input QR
+                                </label>
+                                <div class="radio-group-modern">
+                                    <div class="radio-card">
+                                        <input type="radio" name="qrInputMode" value="text" id="qrModeText" checked>
+                                        <label for="qrModeText" class="radio-card-label">
+                                            <div class="radio-card-icon">
+                                                <i class="fas fa-keyboard"></i>
+                                            </div>
+                                            <div class="radio-card-content">
+                                                <div class="radio-card-title">Buat dari Teks</div>
+                                                <div class="radio-card-desc">Masukkan teks atau URL untuk membuat QR Code</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="radio-card">
+                                        <input type="radio" name="qrInputMode" value="file" id="qrModeFile">
+                                        <label for="qrModeFile" class="radio-card-label">
+                                            <div class="radio-card-icon">
+                                                <i class="fas fa-upload"></i>
+                                            </div>
+                                            <div class="radio-card-content">
+                                                <div class="radio-card-title">Unggah File QR</div>
+                                                <div class="radio-card-desc">Gunakan file PNG QR Code yang sudah ada</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- QR Data Text Input -->
+                            <div class="form-group" id="qrTextSection">
+                                <label class="form-label">
+                                    <i class="fas fa-edit me-2"></i>
+                                    Data QR Code
+                                </label>
+                                <div class="textarea-wrapper">
+                                    <textarea id="qrData" name="qrData" class="form-control form-textarea" 
+                                              placeholder="Masukkan teks, URL, atau data lain untuk QR Code Anda..." 
+                                              rows="4"></textarea>
+                                    <div class="textarea-footer">
+                                        <div class="char-counter">
+                                            <span id="charCount" class="char-count">0</span>
+                                            <span class="char-limit">karakter</span>
+                                        </div>
+                                        <div class="capacity-info">
+                                            <span id="capacityAnalysis" class="capacity-analysis"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- QR File Upload -->
+                            <div class="form-group d-none" id="qrFileSection">
+                                <label class="form-label">
+                                    <i class="fas fa-image me-2"></i>
+                                    File PNG QR Code
+                                </label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" id="qrFile" name="qrFile" 
+                                           accept=".png" class="file-upload-input">
+                                    <label for="qrFile" class="file-upload-label">
+                                        <div class="upload-content">
+                                            <div class="upload-icon">
+                                                <i class="fas fa-qrcode"></i>
+                                            </div>
+                                            <div class="upload-text">
+                                                <span class="upload-title">Pilih file QR Code</span>
+                                                <span class="upload-subtitle">Format PNG yang didukung</span>
+                                            </div>
+                                        </div>
+                                        <div class="upload-formats">
+                                            <span class="format-tag">PNG</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Real-time QR Preview -->
+                            <div class="qr-preview-section" id="qrPreviewSection">
+                                <label class="form-label">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Pratinjau QR Code
+                                </label>
+                                <div class="qr-preview-container">
+                                    <div class="qr-preview-wrapper">
+                                        <div id="qrPreview" class="qr-preview-placeholder">
+                                            <div class="preview-icon">
+                                                <i class="fas fa-qrcode"></i>
+                                            </div>
+                                            <span class="preview-text">Pratinjau QR akan muncul di sini</span>
+                                        </div>
+                                    </div>
+                                    <div class="qr-info-panel" id="qrInfo">
+                                        <div class="qr-stats-grid">
+                                            <div class="stat-item">
+                                                <div class="stat-label">Versi</div>
+                                                <div class="stat-value" id="qrVersion">-</div>
+                                            </div>
+                                            <div class="stat-item">
+                                                <div class="stat-label">Ukuran</div>
+                                                <div class="stat-value" id="qrSize">-</div>
+                                            </div>
+                                            <div class="stat-item">
+                                                <div class="stat-label">Error Correction</div>
+                                                <div class="stat-value" id="qrErrorCorrection">-</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Options Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-shield-alt text-success"></i>
+                                </div>
+                                <div class="section-info">
+                                    <h4 class="section-title">Opsi Keamanan</h4>
+                                    <p class="section-subtitle">Konfigurasi pengikatan dokumen untuk keamanan maksimal</p>
+                                </div>
+                            </div>
+                            
+                            <div class="security-toggle-card">
+                                <div class="toggle-header">
+                                    <div class="toggle-switch-wrapper">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="enableSecurity" 
+                                                   name="enableSecurity" value="true">
+                                            <label class="form-check-label" for="enableSecurity"></label>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-content">
+                                        <div class="toggle-title">
+                                            <i class="fas fa-lock me-2"></i>
+                                            Aktifkan Pengikatan Dokumen
+                                        </div>
+                                        <div class="toggle-description">
+                                            Ikat QR code secara aman ke dokumen spesifik ini dengan enkripsi kriptografi
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Configuration (Hidden by default) -->
+                            <div class="security-config d-none" id="securityConfig">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="security-option-card">
+                                            <div class="card-header">
+                                                <div class="option-icon">
+                                                    <i class="fas fa-clock text-warning"></i>
+                                                </div>
+                                                <div class="option-info">
+                                                    <div class="option-title">Masa Berlaku Pengikatan</div>
+                                                    <div class="option-subtitle">Durasi keaktifan binding</div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <select id="expiryHours" name="expiryHours" class="form-select">
+                                                    <option value="1">1 Jam</option>
+                                                    <option value="6">6 Jam</option>
+                                                    <option value="24" selected>24 Jam</option>
+                                                    <option value="72">3 Hari</option>
+                                                    <option value="168">1 Minggu</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="security-status-card">
+                                            <div class="card-header">
+                                                <div class="option-icon">
+                                                    <i class="fas fa-shield-check text-success"></i>
+                                                </div>
+                                                <div class="option-info">
+                                                    <div class="option-title">Status Keamanan</div>
+                                                    <div class="option-subtitle">Level proteksi saat ini</div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="security-level-indicator">
+                                                    <div class="level-badge level-high">
+                                                        <div class="level-dot"></div>
+                                                        <div class="level-text">
+                                                            <div class="level-title">Level Tinggi</div>
+                                                            <div class="level-desc">Enkripsi Kriptografi</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="security-info-panel mt-3">
+                                    <div class="info-panel-header">
+                                        <i class="fas fa-info-circle text-primary"></i>
+                                        <span class="panel-title">Informasi Keamanan</span>
+                                    </div>
+                                    <div class="info-panel-content">
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <div class="security-feature">
+                                                    <i class="fas fa-lock text-success"></i>
+                                                    <span>QR code akan diikat secara kriptografi ke dokumen yang dipilih</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="security-feature">
+                                                    <i class="fas fa-fingerprint text-info"></i>
+                                                    <span>Sistem akan membuat sidik jari unik untuk setiap dokumen</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="security-feature">
+                                                    <i class="fas fa-clock text-warning"></i>
+                                                    <span>Pengikatan akan kedaluwarsa sesuai masa berlaku yang dipilih</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Info for File Upload Mode -->
+                            <div class="security-validation d-none" id="securityValidation">
+                                <div class="alert alert-info border-0">
+                                    <div class="alert-content">
+                                        <div class="alert-icon">
+                                            <i class="fas fa-shield-check"></i>
+                                        </div>
+                                        <div class="alert-info-content">
+                                            <div class="alert-title">Validasi QR Code</div>
+                                            <div class="alert-description">
+                                                QR code yang diunggah akan divalidasi terhadap dokumen sebelum 
+                                                disematkan untuk memastikan integritas keamanan
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Processing Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="embedButton">
+                                <div class="btn-content">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    <span id="embedButtonText">Buat & Sematkan QR Aman</span>
+                                </div>
+                                <div class="btn-loader d-none">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span>Memproses...</span>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Status and Results -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="position-sticky" style="top: 1rem;">
+                <!-- Progress Section -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="header-info">
+                                <h5 class="card-title mb-1">
+                                    <i class="fas fa-cogs text-primary me-2"></i>
+                                    Status Pemrosesan
+                                </h5>
+                                <p class="card-subtitle text-muted mb-0">Monitor progres real-time</p>
+                            </div>
+                            <div class="status-indicator" id="overallStatus">
+                                <span class="status-dot bg-success"></span>
+                                <span class="status-text text-success">Siap</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Enhanced Progress Container -->
+                        <div class="progress-container d-none" id="progressContainer">
+
+                <!-- Steganography Process Visualization -->
+                <div class="stego-process-viz" id="stegoProcessViz">
+                    <div class="process-header">
+                        <div class="process-title">
+                            <i class="fas fa-eye-slash"></i>
+                            <span>Proses Steganografi LSB</span>
+                        </div>
+                        <div class="process-stats">
+                            <div class="stat">
+                                <span class="stat-value" id="currentImage">0</span>
+                                <span class="stat-label">dari</span>
+                                <span class="stat-value" id="totalImages">0</span>
+                                <span class="stat-label">gambar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="visual-process">
+                        <!-- Left: Original Image Preview -->
+                        <div class="image-preview original-preview">
+                            <div class="preview-header">
+                                <i class="fas fa-image"></i>
+                                <span>Gambar Asli</span>
+                            </div>
+                            <div class="preview-container" id="originalPreview">
+                                <div class="preview-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>Menunggu...</span>
+                                </div>
+                            </div>
+                            <div class="preview-info" id="originalInfo">
+                                <div class="info-item">
+                                    <span class="label">Ukuran:</span>
+                                    <span class="value" id="originalSize">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Format:</span>
+                                    <span class="value" id="originalFormat">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Center: Process Arrow with Animation -->
+                        <div class="process-arrow">
+                            <div class="arrow-container">
+                                <div class="arrow-line"></div>
+                                <div class="arrow-head"></div>
+                                <div class="process-dots">
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                </div>
+                            </div>
+                            <div class="process-label">
+                                <i class="fas fa-magic"></i>
+                                <span id="processStepText">LSB Embedding</span>
+                            </div>
+                        </div>
+
+                        <!-- Right: Watermarked Image Preview -->
+                        <div class="image-preview watermarked-preview">
+                            <div class="preview-header">
+                                <i class="fas fa-shield-check"></i>
+                                <span>Gambar Watermark</span>
+                            </div>
+                            <div class="preview-container" id="watermarkedPreview">
+                                <div class="preview-placeholder">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Memproses...</span>
+                                </div>
+                            </div>
+                            <div class="preview-info" id="watermarkedInfo">
+                                <div class="info-item">
+                                    <span class="label">PSNR:</span>
+                                    <span class="value" id="psnrValue">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">MSE:</span>
+                                    <span class="value" id="mseValue">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Visualization -->
+                    <div class="qr-embedding-viz" id="qrEmbeddingViz">
+                        <div class="qr-info-header">
+                            <i class="fas fa-qrcode"></i>
+                            <span>QR Code yang Disematkan</span>
+                        </div>
+                        <div class="qr-display-area">
+                            <div class="qr-preview-small" id="embeddingQrPreview">
+                                <div class="qr-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                </div>
+                            </div>
+                            <div class="qr-embedding-info">
+                                <div class="embedding-detail">
+                                    <span class="detail-label">Data:</span>
+                                    <span class="detail-value" id="embeddingQrData">-</span>
+                                </div>
+                                <div class="embedding-detail">
+                                    <span class="detail-label">Metode:</span>
+                                    <span class="detail-value">LSB Steganografi</span>
+                                </div>
+                                <div class="embedding-detail">
+                                    <span class="detail-label">Posisi:</span>
+                                    <span class="detail-value" id="embeddingPosition">Bit terakhir RGB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Traditional Progress Steps -->
+                <div class="progress-steps-modern" id="progressSteps">
+                    <div class="step modern-step" id="step1" data-step="1">
+                        <div class="step-indicator">
+                            <div class="step-icon"><i class="fas fa-qrcode"></i></div>
+                            <div class="step-number">1</div>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Buat QR Code</div>
+                            <div class="step-description">Generate atau validasi QR</div>
+                        </div>
+                        <div class="step-status">
+                            <i class="fas fa-clock status-pending"></i>
+                        </div>
+                    </div>
+
+                    <div class="step modern-step" id="step2" data-step="2">
+                        <div class="step-indicator">
+                            <div class="step-icon"><i class="fas fa-shield-alt"></i></div>
+                            <div class="step-number">2</div>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Keamanan</div>
+                            <div class="step-description">Terapkan pengikatan aman</div>
+                        </div>
+                        <div class="step-status">
+                            <i class="fas fa-clock status-pending"></i>
+                        </div>
+                    </div>
+
+                    <div class="step modern-step" id="step3" data-step="3">
+                        <div class="step-indicator">
+                            <div class="step-icon"><i class="fas fa-eye-slash"></i></div>
+                            <div class="step-number">3</div>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Sematkan Watermark</div>
+                            <div class="step-description">LSB steganografi invisible</div>
+                        </div>
+                        <div class="step-status">
+                            <i class="fas fa-clock status-pending"></i>
+                        </div>
+                    </div>
+
+                    <div class="step modern-step" id="step4" data-step="4">
+                        <div class="step-indicator">
+                            <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="step-number">4</div>
+                        </div>
+                        <div class="step-content">
+                            <div class="step-title">Selesai</div>
+                            <div class="step-description">Dokumen siap diunduh</div>
+                        </div>
+                        <div class="step-status">
+                            <i class="fas fa-clock status-pending"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Progress Bar -->
+                <div class="overall-progress">
+                    <div class="progress-header">
+                        <span class="progress-label" id="progressText">Mempersiapkan...</span>
+                        <span class="progress-percentage" id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar modern-bar" id="embedProgress">
+                        <div class="progress-fill"></div>
+                        <div class="progress-glow"></div>
+                    </div>
+                    <div class="progress-details" id="progressDetails">
+                        <span class="detail-text">Estimasi: <span id="timeEstimate">-</span></span>
+                        <span class="detail-text">Kecepatan: <span id="processSpeed">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert modern-alert" id="embedAlert"></div>
+        </div>
+        
+        <!-- Results Tabs Panel -->
+        <div class="results-tabs-panel" id="resultsPanel" style="display: none;">
+            <div class="panel-header">
+                <i class="fas fa-clipboard-check"></i>
+                <h3>Hasil Pemrosesan</h3>
+                <div class="panel-status">
+                    <span class="status-badge status-success">Selesai</span>
+                </div>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="results-tab-nav">
+                <button class="results-tab-btn active" data-tab="overview">
+                    <i class="fas fa-eye"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="results-tab-btn" data-tab="images">
+                    <i class="fas fa-images"></i>
+                    <span>Gambar</span>
+                </button>
+                <button class="results-tab-btn" data-tab="metrics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Metrik</span>
+                </button>
+                <button class="results-tab-btn" data-tab="details">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Detail</span>
+                </button>
+            </div>
+            
+            <!-- Tab Contents -->
+            <div class="results-tab-content">
+                
+                <!-- Overview Tab -->
+                <div class="results-tab-pane active" id="tab-overview">
+                    <div class="overview-cards">
+                        <!-- Download Card -->
+                        <div class="overview-card download-card">
+                            <div class="card-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Unduh Dokumen</h4>
+                                <p>Dokumen dengan watermark sudah siap</p>
+                                <div class="download-links" id="embedDownload"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Info Card -->
+                        <div class="overview-card qr-card">
+                            <div class="card-icon">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Informasi QR Code</h4>
+                                <div class="qr-result-info" id="qrResultInfo"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Security Card -->
+                        <div class="overview-card security-card" id="securityCard" style="display: none;">
+                            <div class="card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Keamanan</h4>
+                                <div class="security-result-info" id="securityResultInfo"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Images Tab -->
+                <div class="results-tab-pane" id="tab-images">
+                    <div class="images-tab-header">
+                        <div class="images-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalImagesCount">0</span>
+                                <span class="stat-label">Total Gambar</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="processedImagesCount">0</span>
+                                <span class="stat-label">Berhasil Diproses</span>
+                            </div>
+                        </div>
+                        
+                        <div class="images-controls">
+                            <button type="button" class="view-toggle-btn active" id="gridViewNormal">
+                                <i class="fas fa-th"></i>
+                                Normal
+                            </button>
+                            <button type="button" class="view-toggle-btn" id="gridViewCompact">
+                                <i class="fas fa-th-large"></i>
+                                Compact
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="results-grid-wrapper">
+                        <div class="grid-nav-buttons grid-nav-left">
+                            <button type="button" class="grid-nav-btn" id="gridNavLeft" disabled title="Geser ke kiri">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="results-grid" id="processedImagesGrid">
+                            <div class="results-grid-loading" id="gridLoading" style="display: none;">
+                                <div class="grid-loading-spinner"></div>
+                                <span>Memproses gambar...</span>
+                            </div>
+                            
+                            <div class="results-grid-empty" id="gridEmpty">
+                                <i class="fas fa-image"></i>
+                                <h4>Belum ada gambar yang diproses</h4>
+                                <p>Gambar akan muncul setelah proses embedding selesai</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid-nav-buttons grid-nav-right">
+                            <button type="button" class="grid-nav-btn" id="gridNavRight" disabled title="Geser ke kanan">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Metrics Tab -->
+                <div class="results-tab-pane" id="tab-metrics">
+                    <div class="metrics-container">
+                        <div class="metrics-header">
+                            <h4><i class="fas fa-tachometer-alt"></i> Metrik Kualitas</h4>
+                        </div>
+                        <div class="metrics" id="embedMetrics"></div>
+                    </div>
+                </div>
+                
+                <!-- Details Tab -->
+                <div class="results-tab-pane" id="tab-details">
+                    <div class="details-container">
+                        <div class="details-accordion">
+                            
+                            <!-- Process Log Section -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" type="button" data-target="processLog">
+                                    <span>
+                                        <i class="fas fa-list-alt"></i>
+                                        Log Proses
+                                    </span>
+                                    <i class="fas fa-chevron-down accordion-icon"></i>
+                                </button>
+                                <div class="accordion-content" id="processLog">
+                                    <div class="process-log" id="embedLog"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Analysis Section -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" type="button" data-target="detailedAnalysis">
+                                    <span>
+                                        <i class="fas fa-microscope"></i>
+                                        Analisis Detail
+                                    </span>
+                                    <i class="fas fa-chevron-down accordion-icon"></i>
+                                </button>
+                                <div class="accordion-content" id="detailedAnalysis">
+                                    <div class="detailed-process" id="detailedProcess">
+                                        <h5><i class="fas fa-microscope"></i> Analisis Detail - Gambar Pertama</h5>
+                                        <div id="detailedSteps"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Calculation Details Section -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" type="button" data-target="calculationDetailsContent">
+                                    <span>
+                                        <i class="fas fa-calculator"></i>
+                                        Detail Kalkulasi
+                                    </span>
+                                    <i class="fas fa-chevron-down accordion-icon"></i>
+                                </button>
+                                <div class="accordion-content" id="calculationDetailsContent">
+                                    <div class="calculation-details" id="calculationDetails"></div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Quality & Images Panel -->
+        <div class="analysis-panel">
+            <div class="panel-header">
+                <i class="fas fa-chart-line"></i>
+                <h3>Analisis & Metrik</h3>
+            </div>
+            
+            <!-- Quality Metrics -->
+            <div class="metrics-section">
+                <h4><i class="fas fa-tachometer-alt"></i> Metrik Kualitas</h4>
+                <div class="metrics" id="embedMetrics"></div>
+            </div>
+
+            <!-- Processed Images Grid -->
+            <div class="images-section">
+                <div class="results-grid-header">
+                    <div class="results-grid-title">
+                        <i class="fas fa-images"></i>
+                        <h4>Gambar yang Diproses</h4>
+                    </div>
+                    <div class="grid-view-controls">
+                        <button type="button" class="view-toggle-btn active" id="gridViewNormal">
+                            <i class="fas fa-th"></i>
+                            Normal
+                        </button>
+                        <button type="button" class="view-toggle-btn" id="gridViewCompact">
+                            <i class="fas fa-th-large"></i>
+                            Compact
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Modern Styles for Embed Page */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin: 0;
+    max-width: 600px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    font-size: 1.25rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2d3748;
+}
+
+.section-subtitle {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Enhanced File Upload */
+.file-upload-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.file-upload-input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.file-upload-label {
+    display: block;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.file-upload-label:hover {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.15);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.file-upload-label:hover .upload-icon {
+    color: #0d6efd;
+}
+
+.upload-title {
+    font-weight: 600;
+    color: #2d3748;
+    display: block;
+}
+
+.upload-subtitle {
+    color: #6c757d;
+    font-size: 0.875rem;
+    display: block;
+}
+
+.upload-formats {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.format-tag {
+    background: #0d6efd;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Document Preview */
+.document-preview {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.preview-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-info {
+    flex: 1;
+}
+
+.preview-filename {
+    font-weight: 600;
+    color: #2d3748;
+    display: block;
+}
+
+.preview-details {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.25rem;
+}
+
+.preview-size, .preview-type {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Radio Cards for QR Mode */
+.radio-group-modern {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.radio-card {
+    position: relative;
+}
+
+.radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.radio-card-label {
+    display: block;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    height: 100%;
+}
+
+.radio-card input:checked + .radio-card-label {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.2);
+}
+
+.radio-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    color: #6c757d;
+}
+
+.radio-card input:checked + .radio-card-label .radio-card-icon {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: white;
+}
+
+.radio-card-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.radio-card-desc {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+/* Textarea Enhancement */
+.textarea-wrapper {
+    position: relative;
+}
+
+.form-textarea {
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-textarea:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    transform: translateY(-1px);
+}
+
+.textarea-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.char-counter {
+    color: #6c757d;
+}
+
+.char-count {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* QR Preview */
+.qr-preview-container {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.qr-preview-wrapper {
+    flex-shrink: 0;
+}
+
+.qr-preview-placeholder {
+    width: 200px;
+    height: 200px;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.qr-preview-placeholder:hover {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+}
+
+.preview-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.preview-text {
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.qr-info-panel {
+    flex: 1;
+}
+
+.qr-stats-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Security Toggle Card */
+.security-toggle-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.toggle-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.toggle-switch-wrapper {
+    flex-shrink: 0;
+}
+
+.toggle-content {
+    flex: 1;
+}
+
+.toggle-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-description {
+    color: #6c757d;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Security Cards */
+.security-option-card,
+.security-status-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.security-option-card:hover,
+.security-status-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.option-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.option-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.option-subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+/* Security Level Indicator */
+.security-level-indicator {
+    text-align: center;
+}
+
+.level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #c3e6cb;
+}
+
+.level-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28a745;
+    animation: pulse 2s infinite;
+}
+
+.level-title {
+    font-weight: 600;
+    color: #155724;
+    font-size: 0.875rem;
+}
+
+.level-desc {
+    font-size: 0.75rem;
+    color: #6f7a7a;
+}
+
+/* Security Info Panel */
+.security-info-panel {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.info-panel-header {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.info-panel-content {
+    padding: 1rem;
+}
+
+.security-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.security-feature:last-child {
+    margin-bottom: 0;
+}
+
+.security-feature i {
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+}
+
+.security-feature span {
+    font-size: 0.875rem;
+    color: #495057;
+    line-height: 1.4;
+}
+
+/* Enhanced Button */
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Status Indicators with Bootstrap Colors */
+.status-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.alert {
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0;
+}
+
+.alert-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.alert-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.125rem;
+}
+
+.alert-info .alert-icon {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.alert-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.alert-description {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .radio-group-modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .qr-preview-container {
+        flex-direction: column;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.form-section h4 {
+    color: #374151;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .radio-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.radio-option:hover {
+    border-color: #3b82f6;
+    background-color: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.radio-option input[type="radio"]:checked + .radio-indicator + span {
+    font-weight: 600;
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+}
+
+.radio-indicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.radio-option input[type="radio"]:checked + .radio-indicator {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.radio-option input[type="radio"]:checked + .radio-indicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+    animation: radioSelect 0.2s ease-out;
+}
+
+@keyframes radioSelect {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.2s;
+    min-height: 100px;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.input-helper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.capacity-info {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.qr-preview-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.qr-preview-container {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .qr-preview-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+.qr-preview-placeholder {
+    width: 180px;
+    height: 180px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-preview-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(203, 213, 225, 0.1) 10px,
+        rgba(203, 213, 225, 0.1) 20px
+    );
+    pointer-events: none;
+}
+
+.qr-preview-placeholder:hover {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.qr-preview-placeholder i {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.7;
+    z-index: 1;
+    position: relative;
+}
+
+.qr-preview-placeholder span {
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 1;
+    position: relative;
+}
+
+#qrPreview img {
+    width: 180px;
+    height: 180px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+#qrPreview img:hover {
+    transform: scale(1.05);
+}
+
+.qr-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.qr-stats {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.qr-stats span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.qr-stats span:hover {
+    border-color: #3b82f6;
+    background-color: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.qr-stats span::before {
+    content: attr(data-label);
+    color: #6b7280;
+    font-weight: 400;
+}
+
+.qr-stats span span {
+    display: inline;
+    padding: 0;
+    background: none;
+    border: none;
+    font-weight: 600;
+    color: #3b82f6;
+    transform: none;
+    box-shadow: none;
+}
+
+.qr-stats span span:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.security-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #3b82f6;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.toggle-label {
+    flex: 1;
+}
+
+.toggle-title {
+    font-weight: 600;
+    color: #374151;
+    display: block;
+}
+
+.toggle-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: block;
+}
+
+.security-config {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.security-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .security-options-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.security-option-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.security-option-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.option-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.option-header i {
+    color: #3b82f6;
+    font-size: 0.875rem;
+}
+
+.security-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: white;
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+}
+
+.security-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.security-status-compact {
+    margin-top: 0.5rem;
+}
+
+.security-level {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+}
+
+.level-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.level-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.level-title {
+    font-weight: 600;
+    color: #1e40af;
+    font-size: 0.875rem;
+}
+
+.level-desc {
+    font-size: 0.75rem;
+    color: #3730a3;
+}
+
+.security-info-panel {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.info-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 500;
+    color: #475569;
+}
+
+.info-panel-header i {
+    color: #3b82f6;
+}
+
+.info-panel-content {
+    padding: 1rem;
+}
+
+.security-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.security-feature:last-child {
+    margin-bottom: 0;
+}
+
+.security-feature i {
+    color: #10b981;
+    font-size: 0.875rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+}
+
+.validation-notice {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #fef7ec 0%, #fef3c7 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: #f59e0b;
+    border-radius: 50%;
+    color: white;
+    flex-shrink: 0;
+}
+
+.notice-content {
+    flex: 1;
+}
+
+.notice-title {
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 0.25rem;
+}
+
+.notice-description {
+    font-size: 0.875rem;
+    color: #b45309;
+    line-height: 1.4;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-large:hover::before {
+    left: 100%;
+}
+
+.btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.form-actions {
+    margin-top: 2rem;
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.progress-container {
+    margin: 2rem 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.progress-text {
+    text-align: center;
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.step-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e5e7eb;
+}
+
+.step.active {
+    color: #3b82f6;
+}
+
+.step.active .step-icon {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.step.completed {
+    color: #10b981;
+}
+
+.step.completed .step-icon {
+    background-color: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+.result-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+
+.result-section h5 {
+    margin-bottom: 1rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+/* Image comparison styles */
+.image-comparison-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.image-comparison-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.image-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .image-pair {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.image-container {
+    position: relative;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.image-container img:hover {
+    transform: scale(1.02);
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.image-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.image-metrics {
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+@media (max-width: 480px) {
+    .image-metrics {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .metric {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+/* Document Preview and Image Status */
+.document-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.preview-header i {
+    color: #3b82f6;
+    font-size: 1.2em;
+}
+
+.preview-filename {
+    font-weight: 600;
+    color: #374151;
+    flex: 1;
+}
+
+.preview-size {
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #e5e7eb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.image-status {
+    margin-top: 0.75rem;
+}
+
+.status-checking,
+.status-has-images,
+.status-no-images,
+.status-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 2px solid;
+    animation: statusFadeIn 0.4s ease-out;
+}
+
+@keyframes statusFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.status-checking {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-color: #3b82f6;
+}
+
+.status-has-images {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #10b981;
+}
+
+.status-no-images {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #f59e0b;
+}
+
+.status-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #ef4444;
+}
+
+.status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 1.1em;
+}
+
+.status-checking .status-icon {
+    background: #3b82f6;
+    color: white;
+}
+
+.status-has-images .status-icon {
+    background: #10b981;
+    color: white;
+}
+
+.status-no-images .status-icon {
+    background: #f59e0b;
+    color: white;
+}
+
+.status-error .status-icon {
+    background: #ef4444;
+    color: white;
+}
+
+.status-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.status-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.status-checking .status-title {
+    color: #1e40af;
+}
+
+.status-has-images .status-title {
+    color: #166534;
+}
+
+.status-no-images .status-title {
+    color: #92400e;
+}
+
+.status-error .status-title {
+    color: #991b1b;
+}
+
+.status-description {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: inherit;
+    opacity: 0.8;
+}
+
+#imageCount {
+    font-weight: 600;
+    color: #059669;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+}
+
+.status-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-status-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-status-action:hover {
+    background: currentColor;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-status-action i {
+    font-size: 0.875rem;
+}
+
+/* Enhanced Image Display Styles */
+.no-images-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 8px;
+    border: 2px dashed #d1d5db;
+}
+
+.no-images-message i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+.watermarked-container.watermark-success {
+    position: relative;
+    overflow: hidden;
+}
+
+.watermarked-container.watermark-success::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 49%, rgba(16, 185, 129, 0.1) 50%, transparent 51%);
+    pointer-events: none;
+    animation: successGlow 2s ease-in-out;
+}
+
+@keyframes successGlow {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+.original-label,
+.watermarked-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.original-label i {
+    color: #3b82f6;
+}
+
+.watermarked-label i {
+    color: #10b981;
+}
+
+.success-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.method-badge {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+}
+
+.steganography-info {
+    margin-top: 1rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.steganography-info .info-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.steganography-info .info-content {
+    padding: 1rem;
+}
+
+.steganography-info .info-content p {
+    margin-bottom: 1rem;
+    color: #1e40af;
+    line-height: 1.5;
+    font-size: 0.875rem;
+}
+
+.steganography-features {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #1e40af;
+}
+
+.feature-item i {
+    color: #10b981;
+    font-size: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .status-checking,
+    .status-has-images,
+    .status-no-images,
+    .status-error {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .status-actions {
+        justify-content: center;
+    }
+    
+    .preview-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .steganography-features {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/embed.js') }}"></script>
+{% endblock %}

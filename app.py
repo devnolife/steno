@@ -229,6 +229,10 @@ def index():
 def embed():
     return render_template('embed.html')
 
+@app.route('/embed/results')
+def embed_results():
+    return render_template('result-embed.html')
+
 @app.route('/validate')
 def validate():
     return render_template('validate.html')
